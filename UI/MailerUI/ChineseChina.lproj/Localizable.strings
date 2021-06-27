@@ -385,7 +385,7 @@
 "Set as Junk" = "设为垃圾邮件";
 
 "Sort" = "分类";
-"Order Received" = "顺序排列";
+"Order Received" = "收件序号";
 "Descending Order" = "降序排列";
 "Back" = "返回";
 "Copy messages" = "复制信息";

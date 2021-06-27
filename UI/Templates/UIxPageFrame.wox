@@ -116,8 +116,14 @@
               <var:if condition="isSuperUser">
                 var UserAdministrationPath = '<var:string value="relativeAdministrationPath" const:escapeHTML="NO" />';
               </var:if>
-
-              var UserLogoffPath = '<var:string value="logoffPath" const:escapeHTML="NO" />';
+              
+              var UserLogoffPath = '';
+              <var:if condition="canLogoff">
+                UserLogoffPath = '<var:string value="logoffPath" const:escapeHTML="NO" />';
+              </var:if>
+              if (window.location.host.indexOf("mail")>-1) {
+                UserLogoffPath = "/login/logoff";
+              }
 
               var HelpURL =  '<var:string value="helpURL" const:escapeHTML="NO" />';
             </var:if>
