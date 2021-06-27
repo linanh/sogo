@@ -117,10 +117,7 @@
                 var UserAdministrationPath = '<var:string value="relativeAdministrationPath" const:escapeHTML="NO" />';
               </var:if>
 
-              var UserLogoffPath = '';
-              <var:if condition="canLogoff">
-                UserLogoffPath = '<var:string value="logoffPath" const:escapeHTML="NO" />';
-              </var:if>
+              var UserLogoffPath = '<var:string value="logoffPath" const:escapeHTML="NO" />';
 
               var HelpURL =  '<var:string value="helpURL" const:escapeHTML="NO" />';
             </var:if>
