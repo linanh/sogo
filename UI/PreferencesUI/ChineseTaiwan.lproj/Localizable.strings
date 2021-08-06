@@ -269,8 +269,8 @@
 "Send a reject message" = "寄送拒絶信件";
 "Send a vacation message" = "寄送休假訊息";
 "Stop processing filter rules" = "終止郵件過濾";
-"is under" = "在下面";
-"is over" = "已結束";
+"is under" = "小於";
+"is over" = "大於";
 "is" = "是";
 "is not" = "不是";
 "contains" = "包含";

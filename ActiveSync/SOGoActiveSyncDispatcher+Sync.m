@@ -1417,7 +1417,8 @@ FIXME
         NSArray *allMessages, *a;
         NSString *firstUIDAdded;
 
-        int j, k, return_count, highestmodseq;
+        int j, k, return_count;
+        unsigned long long highestmodseq;
         BOOL found_in_cache, initialLoadInProgress;
 
         initialLoadInProgress = NO;
@@ -1459,12 +1460,12 @@ FIXME
         else
          {
            a = [theSyncKey componentsSeparatedByString: @"-"];
-           highestmodseq = [[a objectAtIndex: 1] intValue];
+           highestmodseq = [[a objectAtIndex: 1] unsignedLongLongValue];
          }
 
         if ([folderMetadata objectForKey: @"InitialLoadSequence"])
           {
-            if (highestmodseq < [[folderMetadata objectForKey: @"InitialLoadSequence"] intValue])
+            if (highestmodseq < [[folderMetadata objectForKey: @"InitialLoadSequence"] unsignedLongLongValue])
               initialLoadInProgress = YES;
             else
               {

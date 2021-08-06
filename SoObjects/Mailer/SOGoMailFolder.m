@@ -2142,11 +2142,12 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
   if ([self imap4Connection])
     {
       NSDictionary *result;
-      unsigned int modseq, uid;
+      unsigned long long modseq;
+      unsigned int uid;
 
       uid = [theId intValue];
       result = [[imap4 client] fetchModseqForUid: uid];
-      modseq = [[[[result objectForKey: @"RawResponse"]  objectForKey: @"fetch"] objectForKey: @"modseq"] intValue];
+      modseq = [[[[result objectForKey: @"RawResponse"]  objectForKey: @"fetch"] objectForKey: @"modseq"] unsignedLongLongValue];
       
       if (modseq < 1)
         modseq = 1;
@@ -2281,14 +2282,15 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
   NSDictionary *d;
   id fetchResults;
 
-  int highestmodseq = 0, i;
+  int i;
+  unsigned long long highestmodseq = 0;
 
   allTokens = [NSMutableArray array];
 
   if (![theSyncToken isEqualToString: @"-1"])
     {
       a = [theSyncToken componentsSeparatedByString: @"-"];
-      highestmodseq = [[a objectAtIndex: 1] intValue];
+      highestmodseq = [[a objectAtIndex: 1] unsignedLongLongValue];
     }
   
   // We first make sure QRESYNC is enabled

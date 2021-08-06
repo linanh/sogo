@@ -18,7 +18,7 @@
     // Default plugins that have successfully passed through Angular's $sanitize service
     var defaultConfiguration = {
       toolbarGroups: [
-        { name: 'basicstyles', groups: [ 'basicstyles', 'colors', 'list', 'indent', 'blocks', 'align', 'links', 'insert', 'spellchecker', 'styles', 'mode' ] }
+        { name: 'basicstyles', groups: [ 'basicstyles', 'colors', 'align', 'insert', 'styles', 'mode' ] }
       ],
 
       // The default plugins included in the basic setup define some buttons that
@@ -42,7 +42,7 @@
       autoGrow_onStartup: true,
       autoGrow_minHeight: 300,
       autoGrow_bottomSpace: 0,
-      language: 'en',
+      language: 'zh-cn',
 
       // The Upload Image plugin requires a remote URL to be defined even though we won't use it
       imageUploadUrl: '/SOGo/'

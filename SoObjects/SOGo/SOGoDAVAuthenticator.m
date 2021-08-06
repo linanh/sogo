@@ -146,9 +146,25 @@
 {
   static SOGoUser *anonymous = nil;
   SOGoUser *user;
-  NSString *login;
+  NSString *login, *auth;
+  NSArray *creds;
 
-  login = [self checkCredentialsInContext:_ctx];
+  login = [[_ctx request] headerForKey: @"x-webobjects-remote-user"];
+  if ([login length] == 0) 
+    {
+      auth = [[_ctx request] headerForKey: @"authorization"];
+      if (auth)
+        {
+          creds = [self parseCredentials: auth];
+          if ([creds count] > 1)
+            login = [creds objectAtIndex: 0];
+        }
+    }
+  if ([login length] == 0 && [[SOGoSystemDefaults sharedSystemDefaults] trustProxyAuthentication])
+    {
+      login = @"anonymous";
+    }
+
   if ([login isEqualToString: @"anonymous"])
     {
       if (!anonymous)
