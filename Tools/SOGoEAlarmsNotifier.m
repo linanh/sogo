@@ -53,6 +53,9 @@
 #import <Appointments/SOGoAptMailReminder.h>
 #import <WEExtensions/WEResourceManager.h>
 
+#import <GDLContentStore/GCSChannelManager.h>
+#import <GDLContentStore/GCSFolderManager.h>
+
 #import "SOGoEAlarmsNotifier.h"
 
 @implementation SOGoEAlarmsNotifier
@@ -158,7 +161,6 @@
   WOContext *localContext;
   WOApplication *app;
   SOGoAptMailReminder *p;
-  NSString *pageName;
   WOResourceManager *rm;
 
   SOGoAppointmentFolders *folders;
@@ -188,9 +190,7 @@
   folders = [userFolder privateCalendars: @"Calendar"
                                inContext: localContext];
 
-  pageName = [NSString stringWithFormat: @"SOGoAptMail%@", @"Reminder"];
-
-  p = [app pageWithName: pageName inContext: localContext];
+  p = [app pageWithName: @"SOGoAptMailReminder" inContext: localContext];
 
   parts = [containerPath componentsSeparatedByString: @"/"];
   if ([parts count] > 4)
@@ -228,6 +228,8 @@
 
 - (BOOL) run
 {
+  GCSChannelManager *cm;
+  GCSFolderManager *fm;
   NSArray *arguments, *alarms;
   NSCalendarDate *startDate, *toDate;
   NSDictionary *d;
@@ -273,7 +275,7 @@
                                                       hour: 0 minute: -5
                                                     second: 0]
                                    toDate: toDate
-                               withMetadata: metadata];
+                             withMetadata: metadata];
 
   max = [alarms count];
   for (count = 0; count < max; count++)
@@ -295,6 +297,10 @@
 		     nameInContainer: [[d objectForKey: @"record"] objectForKey: @"c_name"]];
     }
 
+  // GCSFolder has opened a channel; close it before ending the process
+  fm = [GCSFolderManager defaultFolderManager];
+  cm = [fm channelManager];
+  [cm releaseAllChannels];
 
   return YES;
 }

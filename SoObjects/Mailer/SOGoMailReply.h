@@ -45,6 +45,9 @@
 @interface SOGoMailBrazilianPortugueseReply : SOGoMailReply
 @end
 
+@interface SOGoMailBulgarianReply : SOGoMailReply
+@end
+
 @interface SOGoMailCatalanReply : SOGoMailReply
 @end
 
@@ -103,6 +106,9 @@
 @end
 
 @interface SOGoMailMacedonianReply : SOGoMailReply
+@end
+
+@interface SOGoMailMontenegrinReply : SOGoMailReply
 @end
 
 @interface SOGoMailNorwegianBokmalReply : SOGoMailReply

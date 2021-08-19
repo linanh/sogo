@@ -361,9 +361,23 @@
                 };
               }
             }
-            _.forEach(part.content, function(mixedPart) {
-              _visit(mixedPart);
+            var winmail = _.find(part.content, function(mixedPart) {
+              // Ignore empty content -- that could mean a decoding error server-side.
+              return mixedPart.type == 'UIxMailPartTnefViewer' && mixedPart.content.length > 0;
             });
+
+            if (winmail && !_.find(part.content, function(mixedPart) {
+              return mixedPart.type == 'UIxMailPartAlternativeViewer';
+            })) {
+              // If there's no alternate part in the message, show the winmail.dat attachment only.
+              // Otherwise, show all parts.
+              _visit(winmail);
+            }
+            else {
+              _.forEach(part.content, function(mixedPart) {
+                _visit(mixedPart);
+              });
+            }
           }
           else {
             if (angular.isUndefined(part.safeContent)) {
@@ -864,12 +878,12 @@
   };
 
   /**
-   * @function download
+   * @function downloadArchive
    * @memberof Message.prototype
-   * @desc Download the current message
+   * @desc Download the current message as a zip archive
    * @returns a promise of the HTTP operation
    */
-  Message.prototype.download = function() {
+  Message.prototype.downloadArchive = function() {
     var data, options;
 
     data = { uids: [this.uid] };
@@ -879,12 +893,22 @@
   };
 
   /**
-   * @function downloadAttachments
+   * @function download
    * @memberof Message.prototype
-   * @desc Download an archive of all attachments
+   * @desc Download the current message as a eml file
    * @returns a promise of the HTTP operation
    */
-  Message.prototype.downloadAttachments = function() {
+  Message.prototype.download = function() {
+    return Message.$$resource.download(this.$absolutePath(), 'export');
+  };
+
+  /**
+   * @function downloadAttachments
+   * @memberof Message.prototype
+   * @desc Download a zip archive of all attachments
+   * @returns a promise of the HTTP operation
+   */
+  Message.prototype.downloadAttachmentsArchive = function() {
     var options;
 
     options = { filename: l('attachments') + "-" + this.uid + ".zip" };

@@ -30,6 +30,7 @@ Mailer_OBJC_FILES += \
 	SOGoImageMailBodyPart.m		\
 	SOGoMessageMailBodyPart.m	\
 	SOGoCalendarMailBodyPart.m	\
+	SOGoTNEFMailBodyPart.m		\
 	SOGoVCardMailBodyPart.m		\
 	\
 	SOGoMailForward.m		\
@@ -50,6 +51,8 @@ Mailer_RESOURCE_FILES += \
 	SOGoMailArabicReply.wo \
 	SOGoMailBrazilianPortugueseForward.wo \
 	SOGoMailBrazilianPortugueseReply.wo \
+	SOGoMailBulgarianForward.wo \
+	SOGoMailBulgarianReply.wo \
 	SOGoMailCatalanForward.wo \
 	SOGoMailCatalanReply.wo \
 	SOGoMailChineseChinaForward.wo \
@@ -90,6 +93,8 @@ Mailer_RESOURCE_FILES += \
 	SOGoMailLithuanianReply.wo \
 	SOGoMailMacedonianForward.wo \
 	SOGoMailMacedonianReply.wo \
+	SOGoMailMontenegrinForward.wo \
+	SOGoMailMontenegrinReply.wo \
 	SOGoMailNorwegianBokmalForward.wo \
 	SOGoMailNorwegianBokmalReply.wo \
 	SOGoMailNorwegianNynorskForward.wo \

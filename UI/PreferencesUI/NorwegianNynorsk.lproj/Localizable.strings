@@ -200,6 +200,7 @@
 "choose" = "Velg ...";
 "Arabic" = "العربية";
 "Basque" = "Euskara";
+"Bulgarian" = "Български";
 "Catalan" = "Català";
 "ChineseChina" = "简体中文";
 "ChineseTaiwan" = "Chinese (Taiwan)";
@@ -219,6 +220,7 @@
 "Japanese" = "日本語";
 "Latvian" = "Latviešu";
 "Macedonian" = "Македонски";
+"Montenegrin" = "Crnogorski";
 "NorwegianBokmal" = "Norsk bokmål";
 "NorwegianNynorsk" = "Norsk nynorsk";
 "Polish" = "Polski";
