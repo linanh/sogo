@@ -16,6 +16,7 @@ import {
 } from 'tsdav'
 import { formatProps, getDAVAttribute } from 'tsdav/dist/util/requestHelpers';
 import { makeCollection } from 'tsdav/dist/collection';
+import { fetch } from 'cross-fetch'
 import config from './config'
 
 class WebDAV {
@@ -55,6 +56,21 @@ class WebDAV {
     })
   }
 
+  postCaldav(resource, vcalendar, originator, recipients) {
+    let localHeaders = { 'content-type': 'text/calendar; charset=utf-8'}
+
+    if (originator)
+      localHeaders.originator = originator
+    if (recipients && recipients.length > 0)
+      localHeaders.recipients = recipients.join(',')
+
+    return fetch(this.serverUrl + resource, {
+        method: 'POST',
+        body: vcalendar,
+        headers: { ...this.headers, ...localHeaders }
+      })
+  }
+
   getEvent(resource, filename) {
     return davRequest({
       url: this.serverUrl + resource + filename,
@@ -64,6 +80,29 @@ class WebDAV {
         body: null
       },
       convertIncoming: false
+    })
+  }
+
+  propfindWebdav(resource, properties, depth = 0) {
+    const formattedProperties = properties.map(p => {
+      return { [`i:${p}`]: '' }
+    })
+    return davRequest({
+      url: this.serverUrl + resource,
+      init: {
+        method: 'PROPFIND',
+        headers: { ...this.headers, depth: new String(depth) },
+        namespace: DAVNamespaceShorthandMap[DAVNamespace.DAV],
+        body: {
+          propfind: {
+            _attributes: {
+              ...getDAVAttribute([DAVNamespace.DAV]),
+              'xmlns:i': 'urn:inverse:params:xml:ns:inverse-dav'
+            },
+            prop: formattedProperties
+          }
+        }
+      }
     })
   }
 
@@ -245,6 +284,37 @@ class WebDAV {
         }
       }
       // parseOutgoing
+    })
+  }
+
+  proppatchWebdav(resource, properties, depth = 0) {
+    const formattedProperties = Object.keys(properties).map(p => {
+      if (typeof properties[p] == 'object') {
+        return { [`i:${p}`]: properties[p].map(pp => {
+          const [ key ] = Object.keys(pp)
+          return { [`i:${key}`]: pp[key] || '' }
+        })}
+      }
+      return { [`i:${p}`]: properties[p] || '' }
+    })
+    return davRequest({
+      url: this.serverUrl + resource,
+      init: {
+        method: 'PROPPATCH',
+        headers: { ...this.headers, depth: new String(depth) },
+        namespace: DAVNamespaceShorthandMap[DAVNamespace.DAV],
+        body: {
+          propertyupdate: {
+            _attributes: {
+              ...getDAVAttribute([DAVNamespace.DAV]),
+              'xmlns:i': 'urn:inverse:params:xml:ns:inverse-dav'
+            },
+            set: {
+              prop: formattedProperties
+            }
+          }
+        }
+      }
     })
   }
 
