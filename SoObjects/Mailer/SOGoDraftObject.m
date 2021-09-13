@@ -1768,7 +1768,7 @@ static NSString    *userAgent      = nil;
   dateString = [[NSCalendarDate date] rfc822DateString];
   [map addObject: dateString forKey: @"date"];
   [map addObject: @"1.0" forKey: @"MIME-Version"];
-  [map addObject: @"LMail 1.0" forKey: @"X-Mailer"];
+  [map addObject: @"Omail 2.0" forKey: @"X-Mailer"];
 
   /* add custom headers */
   if ([(s = [[context request] headerForKey:@"x-webobjects-remote-host"]) length] > 0 &&
