@@ -100,6 +100,22 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
   return [modseq1 compare: modseq2];
 }
 
+static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
+{
+  NSString *uid1, *uid2;
+  NSUInteger pos1, pos2;
+
+  uid1 = [entry1 objectForKey: @"uid"];
+  uid2 = [entry2 objectForKey: @"uid"];
+  pos1 = [uids indexOfObject: uid1];
+  pos2 = [uids indexOfObject: uid2];
+
+  if (pos1 > pos2)
+    return NSOrderedDescending;
+  else
+    return NSOrderedAscending;
+}
+
 @interface NGImap4Connection (PrivateMethods)
 
 - (NSString *) imap4FolderNameForURL: (NSURL *) url;
@@ -621,6 +637,27 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
 		 toFolder: (NSString *) destinationFolder
 		inContext: (id) localContext
 {
+  return [self moveUIDs: uids
+               toFolder: destinationFolder
+              inContext: localContext
+               keepCopy: YES];
+}
+
+- (WOResponse *) moveUIDs: (NSArray *) uids
+		 toFolder: (NSString *) destinationFolder
+		inContext: (id) localContext
+{
+  return [self moveUIDs: uids
+               toFolder: destinationFolder
+              inContext: localContext
+               keepCopy: NO];
+}
+
+- (WOResponse *) moveUIDs: (NSArray *) uids
+		 toFolder: (NSString *) destinationFolder
+		inContext: (id) localContext
+                 keepCopy: (BOOL) copy
+{
   NSArray *folders;
   NSString *currentFolderName, *currentAccountName, *destinationAccountName;
   NSMutableString *imapDestinationFolder;
@@ -650,22 +687,40 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
           if ([destinationAccountName isEqualToString: currentAccountName])
             {
               // We make sure the destination IMAP folder exist, if not, we create it.
-              result = [[client status: imapDestinationFolder
-                                 flags: [NSArray arrayWithObject: @"UIDVALIDITY"]]
-                         objectForKey: @"result"];
-              if (![result boolValue])
+              result = [[[client list: @"" pattern: imapDestinationFolder] objectForKey: @"list"] objectForKey: imapDestinationFolder];
+              if (!result)
                 result = [[self imap4Connection] createMailbox: imapDestinationFolder
                                                          atURL: [[self mailAccountFolder] imap4URL]];
               if (!result || [result boolValue])
-                result = [client copyUids: uids toFolder: imapDestinationFolder];
+                {
+                  if (copy || ![[self mailAccountFolder] supportsMove])
+                    result = [client copyUids: uids toFolder: imapDestinationFolder];
+                  else
+                    result = [client moveUids: uids toFolder: imapDestinationFolder];
+                }
 
               if ([[result valueForKey: @"result"] boolValue])
-                result = nil;
+                {
+                  result = nil;
+                  if (!copy && ![[self mailAccountFolder] supportsMove])
+                    {
+                      // Server doesn't support MOVE -- delete messages
+                      result = [client storeFlags: [NSArray arrayWithObject: @"Deleted"]
+                                          forUIDs: uids addOrRemove: YES];
+                      if ([[result valueForKey: @"result"] boolValue])
+                        {
+                          [self markForExpunge];
+                          result = nil;
+                        }
+                    }
+                }
               else
-                result = [NSException exceptionWithHTTPStatus: 500
-                                                       reason: [[[result objectForKey: @"RawResponse"]
-                                                                  objectForKey: @"ResponseResult"]
-                                                                 objectForKey: @"description"]];
+                {
+                  result = [NSException exceptionWithHTTPStatus: 500
+                                                         reason: [[[result objectForKey: @"RawResponse"]
+                                                                    objectForKey: @"ResponseResult"]
+                                                                   objectForKey: @"description"]];
+                }
             }
           else
             {
@@ -739,36 +794,6 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
   else
     result = [NSException exceptionWithHTTPStatus: 500
                                            reason: @"Invalid destination."];
-
-  return result;
-}
-
-- (WOResponse *) moveUIDs: (NSArray *) uids
-		 toFolder: (NSString *) destinationFolder
-		inContext: (id) localContext
-{
-  id result;
-  NGImap4Client *client;
-
-  client = [[self imap4Connection] client];
-  if (client)
-    {
-      result = [self copyUIDs: uids toFolder: destinationFolder inContext: localContext];
-      if (![result isNotNull])
-        {
-          result = [client storeFlags: [NSArray arrayWithObject: @"Deleted"]
-                              forUIDs: uids addOrRemove: YES];
-          if ([[result valueForKey: @"result"] boolValue])
-            {
-              [self markForExpunge];
-              result = nil;
-            }
-        }
-    }
-  else
-    result = [NSException exceptionWithName: @"SOGoMailException"
-                                     reason: @"IMAP connection is invalid"
-                                   userInfo: nil];
 
   return result;
 }
@@ -1299,6 +1324,8 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
       switch ([imapAcls characterAtIndex: count])
 	{
 	case 'l':
+	  [SOGoAcls addObjectUniquely: SOGoRole_FolderViewer];
+          break;
 	case 'r':
 	  [SOGoAcls addObjectUniquely: SOGoRole_ObjectViewer];
 	  break;
@@ -1381,11 +1408,10 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
   acls = [sogoAcls objectEnumerator];
   while ((currentAcl = [acls nextObject]))
     {
-      if ([currentAcl isEqualToString: SOGoRole_ObjectViewer])
-	{
-	  [imapAcls appendFormat: @"lr"];
-	  character = 0;
-	}
+      if ([currentAcl isEqualToString: SOGoRole_FolderViewer])
+	character = 'l';
+      else if ([currentAcl isEqualToString: SOGoRole_ObjectViewer])
+	character = 'r';
       else if ([currentAcl isEqualToString: SOGoMailRole_SeenKeeper])
 	character = 's';
       else if ([currentAcl isEqualToString: SOGoMailRole_Writer])
@@ -2345,6 +2371,11 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
          entries with a MODSEQ of 0 */
       fetchResults = [fetchResults sortedArrayUsingFunction: _compareFetchResultsByMODSEQ
                                                     context: NULL];
+    }
+  else
+    {
+      fetchResults = [fetchResults sortedArrayUsingFunction: (int(*)(id, id, void*))_compareFetchResultsByUID
+                                                    context: uids];
     }
 
   for (i = 0; i < [fetchResults count]; i++)

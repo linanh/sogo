@@ -267,6 +267,11 @@ static NSString *inboxFolderName = @"INBOX";
   return [self hasCapability: @"qresync"];
 }
 
+- (BOOL) supportsMove
+{
+  return [self hasCapability: @"move"];
+}
+
 - (id) getInboxQuota
 {
   SOGoMailFolder *inbox;
@@ -428,10 +433,9 @@ static NSString *inboxFolderName = @"INBOX";
           [folderPaths addObject: namespace];
         }
     }
-  [folderPaths
-    sortUsingSelector: @selector (localizedCaseInsensitiveCompare:)];
+  [folderPaths sortUsingSelector: @selector (localizedCaseInsensitiveCompare:)];
   [folderPaths replaceObjectsInRange: NSMakeRange (0, 0)
-	       withObjectsFromArray: mainFolders];
+                withObjectsFromArray: mainFolders];
 
   return folderPaths;
 }

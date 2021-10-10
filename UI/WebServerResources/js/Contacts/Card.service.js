@@ -268,9 +268,10 @@
    * @memberof Card.prototype
    * @desc Save the card to the server.
    */
-  Card.prototype.$save = function() {
+  Card.prototype.$save = function(options) {
     var _this = this,
-        action = 'saveAsContact';
+        action = 'saveAsContact',
+        data;
 
     if (this.c_component == 'vlist') {
       action = 'saveAsList';
@@ -279,11 +280,16 @@
       });
     }
 
+    data = this.$omit();
+    if (options && options.ignoreDuplicate) {
+      angular.extend(data, options);
+    }
+
     return Card.$$resource.save([
       Card.encodeUri(this.pid),
       Card.encodeUri(this.id) || '_new_'
     ].join('/'),
-                                this.$omit(),
+                                data,
                                 { action: action })
       .then(function(data) {
         // Format birthdate
@@ -328,28 +334,36 @@
   };
 
   Card.prototype.$fullname = function(options) {
-    var fn = this.c_cn || '', html = options && options.html, email, names;
+    var toHtmlEntities = function (string) {
+      if (options && options.html && string && string.length > 0)
+        return string.replace(/./gm, function(s) {
+	  return "&#" + s.charCodeAt(0) + ";";
+        });
+      else
+        return string;
+    };
+    var fn = toHtmlEntities(this.c_cn) || '', html = options && options.html, email, names;
     if (fn.length === 0) {
       names = [];
       if (this.c_givenname && this.c_givenname.length > 0)
-        names.push(this.c_givenname);
+        names.push(toHtmlEntities(this.c_givenname));
       if (this.nickname && this.nickname.length > 0)
-        names.push((html?'<em>':'') + this.nickname + (html?'</em>':''));
+        names.push((html?'<em>':'') + toHtmlEntities(this.nickname) + (html?'</em>':''));
       if (this.c_sn && this.c_sn.length > 0)
-        names.push(this.c_sn);
+        names.push(toHtmlEntities(this.c_sn));
       if (names.length > 0)
         fn = names.join(' ');
       else if (this.org && this.org.length > 0) {
-        fn = this.org;
+        fn = toHtmlEntities(this.org);
       }
       else if (this.emails && this.emails.length > 0) {
         email = _.find(this.emails, function(i) { return i.value !== ''; });
         if (email)
-          fn = email.value;
+          fn = toHtmlEntities(email.value);
       }
     }
     if (this.contactinfo)
-      fn += ' (' + this.contactinfo.split("\n").join("; ") + ')';
+      fn += ' (' + toHtmlEntities(this.contactinfo.split("\n").join("; ")) + ')';
 
     return fn;
   };

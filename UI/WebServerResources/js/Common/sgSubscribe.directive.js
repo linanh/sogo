@@ -65,6 +65,7 @@
 
     vm.selectedUser = null;
     vm.users = [];
+    vm.folderType = folderType;
 
     vm.searchTextOptions = {
       updateOn: 'default blur',
@@ -107,6 +108,7 @@
     };
 
     vm.close = function() {
+      User.$query = null;
       $mdDialog.hide();
     };
   }
