@@ -60,6 +60,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <NGMime/NGMimeFileData.h>
 #import <NGMime/NGMimeMultipartBody.h>
 #import <NGMime/NGMimeType.h>
+#import <NGMime/NGMimeHeaderFields.h>
 #import <NGMail/NGMimeMessageParser.h>
 #import <NGMail/NGMimeMessage.h>
 #import <NGMail/NGMimeMessageGenerator.h>
@@ -426,7 +427,7 @@ struct GlobalObjectId {
 
       body = [thePart body];
 
-      if ([body isKindOfClass: [NGMimeMultipartBody class]])
+      if ([body isKindOfClass: [NGMimeMultipartBody class]] || [body isKindOfClass: [NGMimeMessage class]])
         {
           [self _sanitizedMIMEPart: body
                          performed: b];
@@ -478,6 +479,13 @@ struct GlobalObjectId {
           RELEASE(fdata);
           *b = YES;
         }
+      else if ([body isKindOfClass: [NSData class]])
+        {
+          [thePart setHeader: @"base64"  forKey: @"content-transfer-encoding"];
+          [thePart setBody: [body dataByEncodingBase64]];
+          [thePart setHeader: [NSString stringWithFormat:@"%d", (int)[[thePart body] length]]
+                                         forKey: @"content-length"];
+	}
     }
 }
 

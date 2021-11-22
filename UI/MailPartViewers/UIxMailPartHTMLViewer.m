@@ -487,9 +487,7 @@ _xmlCharsetForCharset (NSString *charset)
             {
               skipAttribute = NO;
               name = [[_attributes nameAtIndex: count] lowercaseString];
-              if ([name hasPrefix: @"ON"])
-                skipAttribute = YES;
-              else if ([name isEqualToString: @"src"])
+              if ([name isEqualToString: @"src"])
                 {
                   value = [_attributes valueAtIndex: count];
                   if ([value hasPrefix: @"cid:"])
@@ -517,13 +515,14 @@ _xmlCharsetForCharset (NSString *charset)
                   name = [NSString stringWithFormat: @"unsafe-%@", name];
                 }
               else if ([name isEqualToString: @"href"]
-                       || [name isEqualToString: @"action"])
+                       || [name isEqualToString: @"action"]
+                       || [name isEqualToString: @"formaction"])
                 {
-                  value = [_attributes valueAtIndex: count];
-                  skipAttribute = ([value rangeOfString: @"://"].location
-                                   == NSNotFound
+                  value = [[_attributes valueAtIndex: count] lowercaseString];
+                  skipAttribute = ([value rangeOfString: @"://"].location == NSNotFound
                                    && ![value hasPrefix: @"mailto:"]
-                                   && ![value hasPrefix: @"#"]);
+                                   && ![value hasPrefix: @"#"]) ||
+                    [value hasPrefix: @"javascript:"];
                   if (!skipAttribute)
                     [resultPart appendString: @" rel=\"noopener\""];
                 }
@@ -534,61 +533,9 @@ _xmlCharsetForCharset (NSString *charset)
                   if ([value rangeOfString: @"url" options: NSCaseInsensitiveSearch].location != NSNotFound)
                     name = [NSString stringWithFormat: @"unsafe-%@", name];
                 }
-	      else if (
-		       // Mouse Events
-		       [name isEqualToString: @"onclick"] ||
-		       [name isEqualToString: @"ondblclick"] ||
-		       [name isEqualToString: @"onmousedown"] ||
-		       [name isEqualToString: @"onmousemove"] ||
-		       [name isEqualToString: @"onmouseout"] ||
-		       [name isEqualToString: @"onmouseup"] ||
-		       [name isEqualToString: @"onmouseover"] ||
-                       [name isEqualToString: @"onpointerrawupdate"] ||
-
-		       // Keyboard Events
-		       [name isEqualToString: @"onkeydown"] ||
-		       [name isEqualToString: @"onkeypress"] ||
-		       [name isEqualToString: @"onkeyup"] ||
-
-		       // Frame/Object Events
-		       [name isEqualToString: @"onabort"] ||
-		       [name isEqualToString: @"onerror"] ||
-		       [name isEqualToString: @"onload"] ||
-		       [name isEqualToString: @"onresize"] ||
-		       [name isEqualToString: @"onscroll"]  ||
-		       [name isEqualToString: @"onunload"] ||
-
-		       // Form Events
-		       [name isEqualToString: @"onblur"] ||
-		       [name isEqualToString: @"onchange"] ||
-		       [name isEqualToString: @"onfocus"] ||
-		       [name isEqualToString: @"onreset"] ||
-		       [name isEqualToString: @"onselect"] ||
-		       [name isEqualToString: @"onsubmit"] ||
-
-                       // Media Events
-                       [name isEqualToString: @"oncanplay"] ||
-                       [name isEqualToString: @"oncanplaythrough"] ||
-                       [name isEqualToString: @"oncuechange"] ||
-                       [name isEqualToString: @"ondurationchange"] ||
-                       [name isEqualToString: @"onemptied"] ||
-                       [name isEqualToString: @"onended"] ||
-                       [name isEqualToString: @"onloadeddata"] ||
-                       [name isEqualToString: @"onloadedmetadata"] ||
-                       [name isEqualToString: @"onloadstart"] ||
-                       [name isEqualToString: @"onpause"] ||
-                       [name isEqualToString: @"onplay"] ||
-                       [name isEqualToString: @"onplaying"] ||
-                       [name isEqualToString: @"onprogress"] ||
-                       [name isEqualToString: @"onratechange"] ||
-                       [name isEqualToString: @"onseeked"] ||
-                       [name isEqualToString: @"onseeking"] ||
-                       [name isEqualToString: @"onstalled"] ||
-                       [name isEqualToString: @"onsuspend"] ||
-                       [name isEqualToString: @"ontimeupdate"] ||
-                       [name isEqualToString: @"onvolumechange"] ||
-                       [name isEqualToString: @"onwaiting"])
+	      else if ([name hasPrefix: @"on"])
 		{
+                  // on Events
 		  skipAttribute = YES;
 		}
               else

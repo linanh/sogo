@@ -204,7 +204,16 @@
         this.$icon = 'thumb_down';
       }
       else if (this.type == 'additional') {
+        this.$icon = 'folder';
+      }
+      else if (this.type == 'shared') {
         this.$icon = 'folder_shared';
+      }
+      else if (this.type == 'otherUsers') {
+        this.$icon = 'folder_shared';
+      }
+      else if (this.type == 'dropbox') {
+        this.$icon = 'drive_folder_upload';
       }
       else {
         this.$isSpecial = false;
@@ -394,6 +403,18 @@
       options.syncToken = this.$syncToken;
     }
 
+    if (this.$unseenOnly)
+      options.unseenOnly = 1;
+
+    if (this.$flaggedOnly)
+      options.flaggedOnly = 1;
+
+    var labels = _.filter(_.keys(this.$filteredLabels), function (k) {
+      return !!_this.$filteredLabels[k];
+    });
+    if (labels.length)
+      options.labels = labels;
+
     // Restart the refresh timer, if needed
     if (!Mailbox.$virtualMode) {
       var refreshViewCheck = Mailbox.$Preferences.defaults.SOGoRefreshViewCheck;
@@ -500,6 +521,16 @@
    */
   Mailbox.prototype.isNoSelect = function() {
     return this.flags.indexOf('noselect') >= 0;
+  };
+
+  /**
+   * @function isWritable
+   * @memberof Mailbox.prototype
+   * @desc Checks the user can write to the mailbox
+   * @returns true if messages can be inserted
+   */
+  Mailbox.prototype.isWritable = function() {
+    return this.flags.indexOf('noselect') < 0 || this.type == 'dropbox';
   };
 
   /**
@@ -628,17 +659,18 @@
   };
 
   /**
-   * @function $emptyTrash
+   * @function $empty
    * @memberof Mailbox.prototype
    * @desc Empty the Trash folder.
    * @returns a promise of the HTTP operation
    */
-  Mailbox.prototype.$emptyTrash = function() {
-    var _this = this;
+  Mailbox.prototype.$empty = function() {
+    var _this = this,
+        action = 'empty' + this.type[0].capitalize() + this.type.substring(1);
 
-    return Mailbox.$$resource.post(this.id, 'emptyTrash').then(function(data) {
+    return Mailbox.$$resource.post(this.id, action).then(function(data) {
       // Remove all messages from the mailbox
-      _this.$messages = [];
+      _this.$messages = _this.$visibleMessages = [];
       _this.uidsMap = {};
       _this.unseenCount = 0;
 
@@ -667,6 +699,30 @@
         message.isread = true;
       });
     });
+  };
+
+  /**
+   * @function getLabels
+   * @memberof Mailbox.prototype
+   * @desc Fetch the list of labels associated to the mailbox. Use the cached value if available.
+   * @returns a promise of the HTTP operation
+   */
+  Mailbox.prototype.getLabels = function(options) {
+    var _this = this;
+
+    if (this.$labels && !(options && options.reload))
+      return Mailbox.$q.when(this.$labels);
+
+    if (angular.isUndefined(this.$filteredLabels))
+      this.$filteredLabels = {};
+    return Mailbox.$$resource.fetch(this.id, 'labels').then(function(data) {
+      _this.$labels = data;
+      return _this.$labels;
+    });
+  };
+
+  Mailbox.prototype.filteredByLabel = function() {
+    return _.includes(this.$filteredLabels, 1);
   };
 
   /**
@@ -864,20 +920,6 @@
   };
 
   /**
-   * @function $reset
-   * @memberof Mailbox.prototype
-   * @desc Reset the original state the mailbox's data.
-   */
-  Mailbox.prototype.$reset = function() {
-    var _this = this;
-    angular.forEach(this.$shadowData, function(value, key) {
-      delete _this[key];
-    });
-    angular.extend(this, this.$shadowData);
-    this.$shadowData = this.$omit();
-  };
-
-  /**
    * @function $move
    * @memberof Mailbox.prototype
    * @desc Move the mailbox to a different parent. Will reload the mailboxes list.
@@ -922,6 +964,25 @@
    */
   Mailbox.prototype.$newMailbox = function(path, name) {
     return this.$account.$newMailbox(path, name);
+  };
+
+  /**
+   * @function $reset
+   * @memberof Mailbox.prototype
+   * @desc Reset the original state the mailbox's data.
+   */
+  Mailbox.prototype.$reset = function(options) {
+    var _this = this;
+    angular.forEach(this.$shadowData, function(value, key) {
+      delete _this[key];
+    });
+    angular.extend(this, this.$shadowData);
+    this.$shadowData = this.$omit();
+    if (options && options.filter) {
+      this.$messages = [];
+      this.$visibleMessages = [];
+      delete this.$syncToken;
+    }
   };
 
   /**

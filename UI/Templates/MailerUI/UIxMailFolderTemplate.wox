@@ -72,7 +72,43 @@
           <md-icon>search</md-icon>
         </md-button>
         <a href="#" class="sg-folder-name"
-           ng-click="mailbox.searchMode($event)" ng-bind="mailbox.selectedFolder.$displayName"><!-- mailbox name --></a>
+           ng-click="mailbox.searchMode($event)" ng-bind="mailbox.service.selectedFolder.$displayName"><!-- mailbox name --></a>
+        <md-menu>
+          <md-button class="sg-icon-button" label:aria-label="Filter"
+                     ng-click="$mdMenu.open()">
+            <md-icon>filter_list</md-icon>
+          </md-button>
+          <md-menu-content width="4">
+            <md-menu-item>
+              <sg-checkmark
+                  ng-change="mailbox.selectedFolder.$filter(mailbox.service.$query)"
+                  ng-model="mailbox.selectedFolder.$unseenOnly"
+                  sg-true-value="1"
+                  sg-false-value="0"> <var:string label:value="Show unread messages only"/></sg-checkmark>
+            </md-menu-item>
+            <md-menu-item>
+              <sg-checkmark
+                  ng-change="mailbox.selectedFolder.$filter(mailbox.service.$query)"
+                  ng-model="mailbox.selectedFolder.$flaggedOnly"
+                  sg-true-value="1"
+                  sg-false-value="0"> <var:string label:value="Show flagged messages only"/></sg-checkmark>
+            </md-menu-item>
+            <md-menu-divider> <!-- divider --></md-menu-divider>
+            <md-menu-item ng-repeat="label in mailbox.selectedFolder.$labels track by label.imapName">
+              <sg-checkmark
+                  ng-change="mailbox.selectedFolder.$filter(mailbox.service.$query)"
+                  ng-model="mailbox.selectedFolder.$filteredLabels[label.imapName]"
+                  sg-true-value="1"
+                  sg-false-value="0">
+                <div layout="row" layout-align="start center">
+                  <div class="sg-color-chip"
+                       ng-style="{ backgroundColor: label.color || '#333' }"><!-- color --></div>
+                  {{ label.name || label.imapName }}
+                </div>
+              </sg-checkmark>
+            </md-menu-item>
+          </md-menu-content>
+        </md-menu>
         <md-menu>
           <md-button class="sg-icon-button" label:aria-label="Sort"
                      ng-click="$mdMenu.open()">
@@ -279,7 +315,13 @@
             <span ng-switch-when="0"><var:string label:value="No message"/></span>
             <span ng-switch-default="true"><span ng-bind="mailbox.service.selectedFolder.getLength()"><!-- count --></span> <var:string label:value="messages"/></span>
           </div>
-          <div class="md-truncate"><md-icon ng-class="{ 'md-flip': mailbox.ascending() }">sort</md-icon> <span ng-bind="mailbox.sort() | loc"><!-- active sort --></span></div>
+          <div class="md-truncate">
+            <md-icon label:aria-label="Filtered by label" ng-show="mailbox.selectedFolder.filteredByLabel()">label_outline</md-icon>
+            <span ng-show="mailbox.selectedFolder.$unseenOnly"><var:string label:value="Unread"/></span>
+            <span ng-show="mailbox.selectedFolder.$flaggedOnly"><var:string label:value="Flagged"/></span>
+            <md-icon ng-class="{ 'md-flip': mailbox.ascending() }">sort</md-icon>
+            <span ng-bind="mailbox.sort() | loc"><!-- active sort --></span>
+          </div>
         </div>
       </md-subheader>
       <md-virtual-repeat-container class="md-flex" md-top-index="mailbox.selectedFolder.$topIndex">

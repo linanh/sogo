@@ -20,6 +20,7 @@
   02111-1307, USA.
 */
 
+#import <Foundation/NSAutoreleasePool.h>
 #import <Foundation/NSValue.h>
 #import <Foundation/NSFileHandle.h>
 
@@ -78,8 +79,7 @@
 
 static NSString *defaultUserID =  @"anyone";
 
-static NSComparisonResult
-_compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
+static NSComparisonResult _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
 {
   static NSNumber *zeroNumber = nil;
   NSNumber *modseq1, *modseq2;
@@ -100,7 +100,7 @@ _compareFetchResultsByMODSEQ (id entry1, id entry2, void *data)
   return [modseq1 compare: modseq2];
 }
 
-static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
+static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
 {
   NSString *uid1, *uid2;
   NSUInteger pos1, pos2;
@@ -1776,6 +1776,8 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
                              forKey: @"{urn:schemas:mailheader:}references"];
       [davIMAPFieldsTable setObject: @"BODY[HEADER.FIELDS (SUBJECT)]"
                              forKey: @"{DAV:}displayname"];
+      [davIMAPFieldsTable setObject: @"RFC822.SIZE"
+                             forKey: @"{DAV:}getcontentlength"];
       [davIMAPFieldsTable setObject: @"BODY[HEADER.FIELDS (TO)]"
                              forKey: @"{urn:schemas:mailheader:}to"];
     }
@@ -1865,7 +1867,7 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
 {
   NGImap4Client *client;
   NSDictionary *response;
-  NSArray *messages, *values = nil;
+  NSArray *uids, *results, *sortedResults = nil;
   NSString *resultKey;
 
   client = [[self imap4Connection] client];
@@ -1885,15 +1887,17 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
 
    if ([[response objectForKey: @"result"] boolValue])
      {
-       messages = [response objectForKey: resultKey];
-       if ([messages count] > 0)
+       uids = [response objectForKey: resultKey];
+       if ([uids count] > 0)
          {
-           response = [client fetchUids: messages parts: properties];
-           values = [response objectForKey: @"fetch"];
+           response = [client fetchUids: uids parts: properties];
+           results = [response objectForKey: @"fetch"];
+           sortedResults = (NSArray *)[results sortedArrayUsingFunction: _compareFetchResultsByUID
+                                                                context: (void *)uids];
          }
      }
 
-  return values;
+  return sortedResults;
 }
 
 - (NSArray *) _davPropstatsWithProperties: (NSArray *) davProperties
@@ -1957,10 +1961,10 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
               fromMessages: (NSArray *) messages
                 toResponse: (WOResponse *) response
 {
-  NSDictionary *davElement;
+  NSDictionary *davElement, *message;
   NSArray *propstats;
   NSMutableArray *all;
-  NSString *message, *davString;
+  NSString *davString;
   SEL *selectors;
   int max, count;
 
@@ -1968,19 +1972,17 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
   selectors = NSZoneMalloc (NULL, sizeof (max * sizeof (SEL)));
 
   for (count = 0; count < max; count++)
-    selectors[count]
-      = SOGoSelectorForPropertyGetter ([properties objectAtIndex: count]);
+    selectors[count] = SOGoSelectorForPropertyGetter ([properties objectAtIndex: count]);
 
   max = [messages count];
   all = [NSMutableArray array];
   for (count = 0; count < max; count++)
     {
-      message = [[messages objectAtIndex: count] stringValue];
+      message = [messages objectAtIndex: count];
       propstats = [self _davPropstatsWithProperties: properties
                                  andMethodSelectors: selectors
-                                         fromMessage: message];
-      davElement = davElementWithContent (@"response", XMLNS_WEBDAV, 
-                                          propstats);
+                                        fromMessage: [[message objectForKey: @"uid"] stringValue]];
+      davElement = davElementWithContent (@"response", XMLNS_WEBDAV, propstats);
 
       [all addObject: davElement];
     }
@@ -2054,14 +2056,13 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
   properties = [self parseDAVRequestedProperties: propElement];
   filterElement = [documentElement firstElementWithTag: @"mail-filters"
                                            inNamespace: XMLNS_INVERSEDAV];
-  searchQualifier = [EOQualifier
-                      qualifierFromMailDAVMailFilters: filterElement];
+  searchQualifier = [EOQualifier qualifierFromMailDAVMailFilters: filterElement];
   sortElement = (NGDOMNodeWithChildren *) [documentElement
                                             firstElementWithTag: @"sort"
                                                     inNamespace: XMLNS_INVERSEDAV];
   sortOrderings = [self _sortOrderingsFromSortElement: sortElement];
 
-  messages = [self _fetchMessageProperties: [properties allKeys]
+  messages = [self _fetchMessageProperties: [properties allValues]
                          matchingQualifier: searchQualifier
                           andSortOrderings: sortOrderings];
   [self _appendProperties: [properties allKeys]
@@ -2303,15 +2304,17 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
                                    threaded: (BOOL) isThreaded
 {
   EOQualifier *searchQualifier;
+  NSAutoreleasePool *pool;
   NSMutableArray *allTokens;
   NSArray *a, *uids;
   NSDictionary *d;
-  id fetchResults;
+  id fetchResults, sortedResults;
 
   int i;
   unsigned long long highestmodseq = 0;
 
   allTokens = [NSMutableArray array];
+  pool = [[NSAutoreleasePool alloc] init];
 
   if (![theSyncToken isEqualToString: @"-1"])
     {
@@ -2321,7 +2324,6 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
   
   // We first make sure QRESYNC is enabled
   [[self imap4Connection] enableExtensions: [NSArray arrayWithObject: @"QRESYNC"]];
-   
 
   // We fetch new messages and modified messages
   if (highestmodseq)
@@ -2369,25 +2371,26 @@ static NSComparisonResult _compareFetchResultsByUID (id entry1, id entry2, NSArr
     {
       /* NOTE: we sort items manually because Cyrus does not properly sort
          entries with a MODSEQ of 0 */
-      fetchResults = [fetchResults sortedArrayUsingFunction: _compareFetchResultsByMODSEQ
+      sortedResults = [fetchResults sortedArrayUsingFunction: _compareFetchResultsByMODSEQ
                                                     context: NULL];
     }
   else
     {
-      fetchResults = [fetchResults sortedArrayUsingFunction: (int(*)(id, id, void*))_compareFetchResultsByUID
+      sortedResults = [fetchResults sortedArrayUsingFunction: _compareFetchResultsByUID
                                                     context: uids];
     }
 
-  for (i = 0; i < [fetchResults count]; i++)
-    { 
-      if ([[[fetchResults objectAtIndex: i] objectForKey: @"flags"] containsObject: @"deleted"] && initialLoadInProgress)
+  for (i = 0; i < [sortedResults count]; i++)
+    {
+      if ([[[sortedResults objectAtIndex: i] objectForKey: @"flags"] containsObject: @"deleted"] && initialLoadInProgress)
         continue;
 
-      d = [NSDictionary dictionaryWithObject: ([[[fetchResults objectAtIndex: i] objectForKey: @"flags"] containsObject: @"deleted"]) ? [NSNull null] : [[fetchResults objectAtIndex: i] objectForKey: @"modseq"]
-                                      forKey: [[[fetchResults objectAtIndex: i] objectForKey: @"uid"] stringValue]];
+      d = [NSDictionary dictionaryWithObject: ([[[sortedResults objectAtIndex: i] objectForKey: @"flags"] containsObject: @"deleted"]) ? [NSNull null] : [[sortedResults objectAtIndex: i] objectForKey: @"modseq"]
+                                      forKey: [[[sortedResults objectAtIndex: i] objectForKey: @"uid"] stringValue]];
       [allTokens addObject: d];
     }
   
+  [pool release];
 
   // We fetch deleted ones
   if (highestmodseq == 0)

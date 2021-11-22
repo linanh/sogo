@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2015 Inverse inc.
+  Copyright (C) 2006-2021 Inverse inc.
 
   This file is part of SOGo
 
@@ -26,6 +26,7 @@
   object.
 */
 
+#import <Foundation/NSAutoreleasePool.h>
 #import <Foundation/NSCalendarDate.h>
 #import <Foundation/NSCharacterSet.h>
 #import <Foundation/NSTimeZone.h>
@@ -420,30 +421,32 @@
 
 - (EOQualifier *) searchQualifier
 {
-  EOQualifier *qualifier, *searchQualifier;
+  EOQualifier *qualifier, *notDeleted, *searchQualifier;
   WORequest *request;
   NSDictionary *sortingAttributes, *content, *filter;
-  NSArray *filters;
-  NSString *searchBy, *searchInput, *searchString, *match;
-  NSMutableArray *searchArray;
-  int nbFilters, i;
+  NSArray *filters, *labels;
+  NSString *searchBy, *searchInput, *searchString, *match, *label;
+  NSMutableArray *qualifiers, *searchArray, *labelQualifiers;
+  BOOL unseenOnly, flaggedOnly;
+  int max, i;
   
   request = [context request];
   content = [[request contentAsString] objectFromJSONString];
-  qualifier = nil;
+  notDeleted = [EOQualifier qualifierWithQualifierFormat: @"(not (flags = %@))", @"deleted"];
+  qualifiers = [NSMutableArray arrayWithObject: notDeleted];
   searchString = nil;
   match = nil;
   filters = [content objectForKey: @"filters"];
+  labels = [content objectForKey: @"labels"];
+  unseenOnly = [[content objectForKey: @"unseenOnly"] boolValue];
+  flaggedOnly = [[content objectForKey: @"flaggedOnly"] boolValue];
 
   if (filters)
     {
-      nbFilters = [filters count];
-      if (nbFilters > 0) {
-        searchArray = [NSMutableArray arrayWithCapacity: nbFilters];
-        sortingAttributes = [content objectForKey: @"sortingAttributes"];
-        if (sortingAttributes)
-          match = [sortingAttributes objectForKey: @"match"]; // AND, OR
-        for (i = 0; i < nbFilters; i++)
+      max = [filters count];
+      if (max > 0) {
+        searchArray = [NSMutableArray arrayWithCapacity: max];
+        for (i = 0; i < max; i++)
           {
             filter = [filters objectAtIndex:i];
             searchBy = [filter objectForKey: @"searchBy"];
@@ -464,36 +467,67 @@
                 [self errorWithFormat: @"Missing parameters in search filter: %@", filter];
               }
           }
+        sortingAttributes = [content objectForKey: @"sortingAttributes"];
+        if (sortingAttributes)
+          match = [sortingAttributes objectForKey: @"match"]; // AND, OR
         if ([match isEqualToString: @"OR"])
           qualifier = [[EOOrQualifier alloc] initWithQualifierArray: searchArray];
         else
           qualifier = [[EOAndQualifier alloc] initWithQualifierArray: searchArray];
+        [qualifier autorelease];
+        [qualifiers addObject: qualifier];
       }
     }
-    
+
+  if (unseenOnly)
+    {
+      searchQualifier = [EOQualifier qualifierWithQualifierFormat: @"(not (flags = %@))", @"seen"];
+      [qualifiers addObject: searchQualifier];
+    }
+  if (flaggedOnly)
+    {
+      searchQualifier = [EOQualifier qualifierWithQualifierFormat: @"(flags = %@)", @"flagged"];
+      [qualifiers addObject: searchQualifier];
+    }
+  if (labels)
+    {
+      max = [labels count];
+      if (max > 0)
+        {
+          labelQualifiers = [NSMutableArray arrayWithCapacity: max];
+            for (i = 0; i < max; i++)
+            {
+              label = [labels objectAtIndex: i];
+              qualifier = [EOQualifier qualifierWithQualifierFormat: @"(flags = %@)", label];
+              [labelQualifiers addObject: qualifier];
+            }
+            if (max > 1)
+              {
+                qualifier = [[EOOrQualifier alloc] initWithQualifierArray: labelQualifiers];
+                [qualifier autorelease];
+              }
+            [qualifiers addObject: qualifier];
+        }
+    }
+
+  if ([qualifiers count] > 1)
+    {
+      qualifier = [[EOAndQualifier alloc] initWithQualifierArray: qualifiers];
+      [qualifier autorelease];
+    }
+  else
+    qualifier = notDeleted;
+
   return qualifier;
 }
 
 - (NSArray *) getSortedUIDsInFolder: (SOGoMailFolder *) mailFolder
 {
-  EOQualifier *qualifier, *fetchQualifier, *notDeleted;
-
   if (!sortedUIDs)
     {
-      notDeleted = [EOQualifier qualifierWithQualifierFormat: @"(not (flags = %@))", @"deleted"];
-      qualifier = [self searchQualifier];
-      if (qualifier)
-        {
-          fetchQualifier = [[EOAndQualifier alloc] initWithQualifiers: notDeleted, qualifier, nil];
-          [fetchQualifier autorelease];
-        }
-      else
-        fetchQualifier = notDeleted;
-
-      sortedUIDs = [mailFolder fetchUIDsMatchingQualifier: fetchQualifier
+      sortedUIDs = [mailFolder fetchUIDsMatchingQualifier: [self searchQualifier]
                                              sortOrdering: [self imap4SortOrdering]
                                                  threaded: sortByThread];
-    
       [sortedUIDs retain];
     }
 
@@ -736,6 +770,7 @@
  * @apiParam {String} filters.searchBy                       Field criteria. Either subject, from, to, cc, or body.
  * @apiParam {String} filters.searchInput                    String to match.
  * @apiParam {String} [filters.negative]                     Reverse the condition when true. Defaults to false.
+ * @apiParam {Boolean} [unseenOnly]                          Filter out seen messages when true. Defaults to false.
  *
  * @apiSuccess (Success 200) {Number} threaded               1 if threading is enabled for the user.
  * @apiSuccess (Success 200) {Number} unseenCount            Number of unread messages
@@ -867,6 +902,7 @@
 		       inFolder: (SOGoMailFolder *) mailFolder
 {
   UIxEnvelopeAddressFormatter *addressFormatter;
+  NSAutoreleasePool *pool;
   NSMutableArray *headers, *msg, *tags;
   NSEnumerator *msgsList;
   NSArray *to, *from;
@@ -890,6 +926,8 @@
 
       msg = [NSMutableArray arrayWithObjects: @"To", @"hasAttachment", @"isFlagged", @"Subject", @"From", @"isRead", @"Priority", @"RelativeDate", @"Size", @"Flags", @"uid", @"isAnswered", @"isForwarded", nil];
       [headers addObject: msg];
+      count = 0;
+      pool = [[NSAutoreleasePool alloc] init];
       while (message)
         {
           // We must check for "umimportant" untagged responses.
@@ -976,6 +1014,13 @@
           [msg addObject: [NSNumber numberWithBool: [self isMessageForwarded]]];
       
           [self setMessage: [msgsList nextObject]];
+
+          count++;
+          if (count % 10 == 0)
+            {
+              [pool release];
+              pool = [[NSAutoreleasePool alloc] init];
+            }
         }
     }
 

@@ -28,17 +28,21 @@ class Preferences {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({userName: this.username, password: this.password})
       })
-      const values = response.headers.get('set-cookie').split(/, /)
-      let authCookies = []
-      for (let v of values) {
-        let c = cookie.parse(v)
-        for (let authCookie of ['0xHIGHFLYxSOGo', 'XSRF-TOKEN']) {
-          if (Object.keys(c).includes('0xHIGHFLYxSOGo')) {
-            authCookies.push(cookie.serialize(authCookie, c[authCookie]))
+      if (response.status == 200) {
+        const values = response.headers.get('set-cookie').split(/, /)
+        let authCookies = []
+        for (let v of values) {
+          let c = cookie.parse(v)
+          for (let authCookie of ['0xHIGHFLYxSOGo', 'XSRF-TOKEN']) {
+            if (Object.keys(c).includes('0xHIGHFLYxSOGo')) {
+              authCookies.push(cookie.serialize(authCookie, c[authCookie]))
+            }
           }
         }
+        this.cookie = authCookies.join('; ')
       }
-      this.cookie = authCookies.join('; ')
+      else
+        throw new Error(`Can't authenticate with username ${this.username} (HTTP status code ${response.status})`)
     }
     return this.cookie
   }
@@ -91,7 +95,7 @@ class Preferences {
       return obj
     }
     for (let k of Object.keys(obj)) {
-      if (typeof obj[k] == 'object') {
+      if (obj[k] && typeof obj[k] == 'object') {
         let o = this.findKey(obj[k], key)
         if (o !== null)
           return o
@@ -137,15 +141,13 @@ class Preferences {
     if (!this.preferences)
       await this.loadPreferences()
 
-    let obj = this.findKey(this.preferences, preference)
-    if (obj == null) {
-      obj = this.preferences
-      for (let path of paths) {
-        if (typeof obj[path] == 'undefined')
-          obj[path] = {}
-        obj = obj[path]
-      }
+    let obj = this.preferences
+    for (let path of paths) {
+      if (typeof obj[path] == 'undefined')
+        obj[path] = {}
+      obj = obj[path]
     }
+
     obj[preference] = value
   }
 

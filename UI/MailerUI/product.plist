@@ -143,6 +143,11 @@
           pageName    = "UIxMailUserRightsEditor";
           actionName  = "saveUserRights";
         };
+        labels = {
+          protectedBy = "View";
+          actionClass = "UIxMailFolderActions";
+          actionName  = "getLabels";
+        };
         addOrRemoveLabel = {
           protectedBy = "View";
           actionClass = "UIxMailFolderActions";
@@ -152,6 +157,23 @@
           protectedBy = "View";
           actionClass = "UIxMailFolderActions";
           actionName  = "removeAllLabels";
+        };
+      };
+    };
+
+    SOGoJunkFolder = {
+      /* just a new toolbar, other things come from SOGoMailFolder */
+      slots = {
+        toolbar = {
+          protectedBy = "View";
+          value = "SOGoMailFolder.toolbar";
+        };
+      };
+      methods = {
+        emptyJunk = {
+          protectedBy = "View";
+          actionClass = "UIxMailFolderActions";
+          actionName = "emptyJunk";
         };
       };
     };

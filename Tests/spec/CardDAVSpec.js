@@ -5,9 +5,10 @@ import TestUtility from '../lib/utilities'
 import {
   DAVNamespace,
   DAVNamespaceShorthandMap,
-  davRequest
+  davRequest,
+  formatProps,
+  getDAVAttribute
 } from 'tsdav'
-import { formatProps, getDAVAttribute } from 'tsdav/dist/util/requestHelpers';
 
 const cards = {
   'new.vcf': `BEGIN:VCARD
@@ -96,7 +97,7 @@ describe('CardDAV extensions', function() {
   })
 
   // https://datatracker.ietf.org/doc/html/rfc6352#section-8.7
-  fit("supports for addressbook-multiget", async function() {
+  it("supports for addressbook-multiget", async function() {
     const hrefs = Object.keys(cards).map(c => `${resource}${c}`)
     const response = await davRequest({
       url: webdav.serverUrl + resource,

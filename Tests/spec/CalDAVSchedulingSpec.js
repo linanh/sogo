@@ -3,17 +3,17 @@ import WebDAV from '../lib/WebDAV'
 import TestUtility from '../lib/utilities'
 import ICAL from 'ical.js'
 
-describe('create, read, modify, delete tasks for regular user', function() {
+describe('CalDAV Scheduling', function() {
   const webdav = new WebDAV(config.username, config.password)
   const webdav_su = new WebDAV(config.superuser, config.superuser_password)
-  const webdavAttendee1 = new WebDAV(config.attendee1, config.attendee1_password)
+  const webdavAttendee1 = new WebDAV(config.attendee1_username, config.attendee1_password)
   const webdavAttendee1Delegate = new WebDAV(config.attendee1_delegate_username, config.attendee1_delegate_password)
 
   const utility = new TestUtility(webdav)
 
   const userCalendar = `/SOGo/dav/${config.username}/Calendar/personal/`
-  const attendee1Calendar = `/SOGo/dav/${config.attendee1}/Calendar/personal/`
-  const attendee1DelegateCalendar = `/SOGo/dav/${config.attendee1_delegate}/Calendar/personal/`
+  const attendee1Calendar = `/SOGo/dav/${config.attendee1_username}/Calendar/personal/`
+  const attendee1DelegateCalendar = `/SOGo/dav/${config.attendee1_delegate_username}/Calendar/personal/`
   const resourceNoOverbookCalendar = `/SOGo/dav/${config.resource_no_overbook}/Calendar/personal/`
   const resourceCanOverbookCalendar = `/SOGo/dav/${config.resource_can_overbook}/Calendar/personal/`
 
@@ -102,8 +102,8 @@ describe('create, read, modify, delete tasks for regular user', function() {
 
   beforeAll(async function() {
     user = await utility.fetchUserInfo(config.username)
-    attendee1 = await utility.fetchUserInfo(config.attendee1)
-    attendee1Delegate = await utility.fetchUserInfo(config.attendee1_delegate)
+    attendee1 = await utility.fetchUserInfo(config.attendee1_username)
+    attendee1Delegate = await utility.fetchUserInfo(config.attendee1_delegate_username)
     resourceNoOverbook = await utility.fetchUserInfo(config.resource_no_overbook)
     resourceCanOverbook = await utility.fetchUserInfo(config.resource_can_overbook)
 
@@ -496,7 +496,7 @@ describe('create, read, modify, delete tasks for regular user', function() {
       .toBe(1)
     vevent = vevents[0]
     expect(vevent.getFirstPropertyValue('recurrence-id'))
-      .withContext('The vEvent of the attendee has a RECURRENCE-ID')
+      .withContext(`The vEvent of the attendee has a RECURRENCE-ID`)
       .toBeTruthy()
     attendees = vevent.getAllProperties('attendee')
     expect(attendees.length)
@@ -554,8 +554,8 @@ describe('create, read, modify, delete tasks for regular user', function() {
     const icsName = 'test-rrule-invitation-deleted-exdate-dance.ics'
     icsList.push(icsName)
 
-    let summary, uid, rrule, recur, organizer, attendees, attendee, nstartdate, exdate, offset
-    let vcalendar, vcalendarOrganizer, vcalendarAttendee, vevent, vevents, veventMaster, veventException
+    let summary, uid, rrule, recur, organizer, attendees, attendee, nstartdate, exdate, tzid, timezone, offset
+    let vcalendar, vtimezone, vcalendarOrganizer, vcalendarAttendee, vevent, vevents, veventMaster, veventException
 
     await _deleteEvent(webdav, userCalendar + icsName)
     await _deleteEvent(webdavAttendee1, attendee1Calendar + icsName)
@@ -590,11 +590,18 @@ describe('create, read, modify, delete tasks for regular user', function() {
     // 3. Add exdate to master event
     vcalendarOrganizer = await _getEvent(webdav, userCalendar, icsName)
     vevent = vcalendarOrganizer.getFirstSubcomponent('vevent')
-    nstartdate = vevent.getFirstProperty('dtstart').getFirstValue().toJSDate()
-    offset = nstartdate.getTimezoneOffset()
-    exdate = new Date(nstartdate.getTime() - offset*60*1000)
-    exdate = ICAL.Time.fromJSDate(exdate)
-    exdate = exdate.convertToZone(ICAL.Timezone.utcTimezone)
+    nstartdate = vevent.getFirstProperty('dtstart').getFirstValue()
+
+    vtimezone = vcalendarOrganizer.getFirstSubcomponent('vtimezone')
+    tzid = vtimezone.getFirstPropertyValue('tzid')
+    timezone = new ICAL.Timezone({
+      component: vtimezone,
+      tzid
+    })
+    offset = timezone.utcOffset(nstartdate)
+
+    exdate = nstartdate.convertToZone(ICAL.Timezone.utcTimezone)
+    exdate.addDuration(new ICAL.Duration({ seconds: -offset }))
     vevent.addPropertyWithValue('exdate', exdate)
 
     await _putEvent(webdav, userCalendar, icsName, vcalendarOrganizer, 204)
@@ -607,9 +614,8 @@ describe('create, read, modify, delete tasks for regular user', function() {
       .toEqual(exdate.toICALString())
 
     // 5. Create an exdate in the attendee's calendar
-    exdate = new Date(nstartdate.getTime() + offset*60*1000 + 1000*60*60*24*2)
-    exdate = ICAL.Time.fromJSDate(exdate)
-    exdate = exdate.convertToZone(ICAL.Timezone.utcTimezone)
+    exdate = nstartdate.convertToZone(ICAL.Timezone.utcTimezone)
+    exdate.addDuration(new ICAL.Duration({ days: 2, seconds: -offset }))
     vevent.addPropertyWithValue('exdate', exdate)
     vevent.removeProperty('last-modified')
     vevent.addProperty(utility.createDateTimeProperty('last-modified'))
@@ -637,7 +643,9 @@ describe('create, read, modify, delete tasks for regular user', function() {
       .withContext('Partstat of attendee is need-actions for the master event')
       .toBe('NEEDS-ACTION')
 
-    expect(veventException).toBeTruthy()
+    expect(veventException)
+    .withContext(`The vCalendar of the organizer has a vEvent with a recurrence-id: ${vcalendarOrganizer}`)
+    .toBeTruthy()
     attendees = veventException.getAllProperties('attendee')
     expect(attendees.length)
       .withContext('Attendees count in the calendar of the exception event')

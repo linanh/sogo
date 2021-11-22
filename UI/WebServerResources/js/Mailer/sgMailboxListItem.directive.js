@@ -31,7 +31,7 @@
         '    ng-click="$ctrl.selectFolder($event)"',
         '    ng-dblclick="$ctrl.editFolder($event)">',
         '    <md-icon ng-class="{ \'sg-opacity-70\': $ctrl.mailbox.isNoSelect() }">{{$ctrl.mailbox.$icon}}</md-icon>',
-        '    <span ng-bind="$ctrl.mailbox.$displayName"></span>',
+        '    <span ng-class="{ \'sg-font-medium\': $ctrl.mailbox.unseenCount }" ng-bind="$ctrl.mailbox.$displayName"></span>',
         '    <span class="sg-counter-badge ng-hide"',
         '          ng-show="$ctrl.mailbox.unseenCount"',
         '          ng-bind="$ctrl.mailbox.unseenCount"></span>',
@@ -87,7 +87,10 @@
       if (this.editMode || this.mailbox == Mailbox.selectedFolder || this.mailbox.isNoSelect())
         return;
       Mailbox.$virtualPath = false;
-      Mailbox.$virtualMode = false;
+      if (Mailbox.$virtualMode) {
+        Mailbox.$virtualMode = false;
+        Mailbox.selectedFolder.$reset({ filter: true });
+      }
       this.accountController.selectFolder(this);
       if ($event) {
         $state.go('mail.account.mailbox', {
@@ -255,11 +258,19 @@
           });
         };
 
+        this.emptyJunkFolder = function() {
+          return this.emptyFolder(l('Junk folder emptied'));
+        };
+
         this.emptyTrashFolder = function() {
-          this.folder.$emptyTrash().then(function() {
+          return this.emptyFolder(l('Trash emptied'));
+        };
+
+        this.emptyFolder = function(successMsg) {
+          this.folder.$empty().then(function() {
             $mdToast.show(
               $mdToast.simple()
-                .textContent(l('Trash emptied'))
+                .textContent(successMsg)
                 .position('top right')
                 .hideDelay(3000));
           });

@@ -1,6 +1,6 @@
 /* SOGoCalendarComponent.h - this file is part of SOGo
  * 
- * Copyright (C) 2006-2014 Inverse inc.
+ * Copyright (C) 2006-2021 Inverse inc.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 @class NSString;
 
 @class iCalCalendar;
+@class iCalEntityObject;
 @class iCalEvent;
 @class iCalPerson;
 @class iCalRepeatableEntityObject;
@@ -75,11 +76,11 @@
 - (void) sendResponseToOrganizer: (iCalRepeatableEntityObject *) newComponent
                             from: (SOGoUser *) owner;
 
-- (void) sendReceiptEmailForObject: (iCalRepeatableEntityObject *) object
+- (void) sendReceiptEmailForObject: (iCalEntityObject *) object
 		    addedAttendees: (NSArray *) theAddedAttendees
 		  deletedAttendees: (NSArray *) theDeletedAttendees
 		  updatedAttendees: (NSArray *) theUpdatedAttendees
-                         operation: (SOGoEventOperation) theOperation;
+                         operation: (SOGoComponentOperation) theOperation;
 
 - (iCalPerson *) findParticipantWithUID: (NSString *) uid;
 

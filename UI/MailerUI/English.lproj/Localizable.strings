@@ -3,6 +3,7 @@
 /* Icon's label */
 "Create"      = "Create";
 "Empty Trash" = "Empty Trash";
+"Empty Junk Folder" = "Empty Junk Folder";
 "Delete"      = "Delete";
 "Expunge"     = "Expunge";
 "Forward"     = "Forward";
@@ -73,8 +74,13 @@
 "An error occured while communicating with the mail server" = "An error occured while communicating with the mail server";
 
 /* Mailbox actions */
+
 /* Compact Folder success message */
 "Folder compacted" = "Folder compacted";
+
+/* Empty Junk Folder success message */
+"Junk folder emptied" = "Junk folder emptied";
+
 /* Empty Trash success message */
 "Trash emptied" = "Trash emptied";
 
@@ -165,6 +171,15 @@
 "Mark Unread" = "Mark Unread";
 "Mark Read"   = "Mark Read";
 "Untitled" = "Untitled";
+
+/* Filter option in messages list */
+"Show unread messages only" = "Show unread messages only";
+
+/* Filter option in messages list */
+"Show flagged messages only" = "Show flagged messages only";
+
+/* Aria label for icon of labels */
+"Filtered by label" = "Filtered by label";
 
 /* Tree */
 "SentFolderName"   = "Sent";
@@ -281,11 +296,17 @@
 /* Trying to access a non-existent certificate */
 "No certificate associated to account." = "No certificate associated to account.";
 
-/* Invalid message signature */
+/* Invalid S/MIME signature */
 "Digital signature is not valid" = "Digital signature is not valid";
 
-/* Valid message signature */
+/* Valid S/MIME signature */
 "Message is signed" = "Message is signed";
+
+/* Valid S/MIME signature but common name doesn't match */
+"Message is signed but the certificate (%{certificateCn}) doesn't match the sender email address" = "Message is signed but the certificate (%{certificateCn}) doesn't match the sender email address";
+
+/* Valid S/MIME signature but common name not found */
+"Message is signed but the certificate doesn't match the sender email address" = "Message is signed but the certificate doesn't match the sender email address";
 
 /* Unknown error while validating message signature */
 "Digital signature is not valid" = "Digital signature is not valid";
@@ -371,6 +392,12 @@
 "error_missingrecipients" = "Please specify at least one recipient.";
 "Send Anyway" = "Send Anyway";
 "Error while saving the draft" = "Error while saving the draft";
+
+/* Error when emptying trash */
+"Unable to empty the trash folder." = "Unable to empty the trash folder.";
+
+/* Error when emptying junk folder */
+"Unable to empty the junk folder." = "Unable to empty the junk folder.";
 
 /* Error when uploading a file attachment */
 "Error while uploading the file \"%{0}\":" = "Error while uploading the file \"%{0}\":";

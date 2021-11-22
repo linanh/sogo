@@ -32,6 +32,9 @@
       this.messageDialog = null; // also access from Message controller
       this.mode = { search: false, multiple: 0 };
 
+      if (!Mailbox.$virtualMode)
+        this.selectedFolder.getLabels(); // fetch labels from server
+
       _registerHotkeys(hotkeys);
 
       // Expunge mailbox when leaving the Mail module
@@ -42,6 +45,10 @@
         _.forEach(hotkeys, function(key) {
           sgHotkeys.deregisterHotkey(key);
         });
+        if (vm.mode.search) {
+          vm.mode.search = false;
+          vm.selectedFolder.$reset({ filter: true });
+        }
       });
 
       // Update window's title with unseen messages count of selected mailbox
@@ -54,7 +61,6 @@
         $window.document.title = title;
       });
     };
-
 
     function _registerHotkeys(keys) {
       keys.push(sgHotkeys.createHotkey({
