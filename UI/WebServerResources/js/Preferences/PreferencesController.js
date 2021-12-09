@@ -25,6 +25,7 @@
         $mdConstant.KEY_CODE.COMMA,
         $mdConstant.KEY_CODE.SEMICOLON
       ];
+      this.mailAutoMarkAsReadDelay = Preferences.defaults.SOGoMailAutoMarkAsReadEnabled ? Preferences.defaults.SOGoMailAutoMarkAsReadDelay : 5;
 
       // Set alternate avatar in User service
       if (Preferences.defaults.SOGoAlternateAvatar)
@@ -105,6 +106,10 @@
     this.removeContactCategory = function(index, form) {
       this.preferences.defaults.SOGoContactsCategories.splice(index, 1);
       form.$setDirty();
+    };
+
+    this.onMailAutoMarkAsReadDelay = function() {
+      this.preferences.defaults.SOGoMailAutoMarkAsReadDelay = this.mailAutoMarkAsReadDelay;
     };
 
     this.addMailAccount = function(ev, form) {
@@ -586,6 +591,32 @@
       }
 
       return r;
+    };
+
+    this.toggleVacationStartTime = function() {
+      var v;
+
+      v = this.preferences.defaults.Vacation;
+
+      if (v.startTimeEnabled) {
+        // Enabling the start date
+        if (!v.startTime) {
+          v.startTime = new Date();
+        }
+      }
+    };
+
+    this.toggleVacationEndTime = function() {
+      var v;
+
+      v = this.preferences.defaults.Vacation;
+
+      if (v.endTimeEnabled) {
+        // Enabling the end date
+        if (!v.endTime) {
+          v.endTime = new Date();
+        }
+      }
     };
   }
 

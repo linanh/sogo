@@ -98,6 +98,9 @@
         _.forEach(hotkeys, function(key) {
           sgHotkeys.deregisterHotkey(key);
         });
+        // Cancel automatic mark as read
+        if (vm.message.$markAsReadPromise)
+          vm.service.$timeout.cancel(vm.message.$markAsReadPromise);
       });
 
     }; // $onInit
@@ -286,7 +289,7 @@
               $mdToast.show(
                 $mdToast.simple()
                   .textContent(l('Successfully created card'))
-                  .position('top right')
+                  .position(sgConstant.toastPosition)
                   .hideDelay(2000));
             });
           });
@@ -485,7 +488,10 @@
                  this.message.uid]
           .join('/'),
           wId = this.message.$absolutePath();
-      if (action) url += '/' + action;
+      if (action) {
+        wId += '/' + action;
+        url += '/' + action;
+      }
       popupWindow = $window.open(url, wId,
                                  ["width=680",
                                   "height=520",

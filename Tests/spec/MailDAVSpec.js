@@ -177,7 +177,7 @@ describe('MailDAV', function() {
     if (mailboxesList.indexOf(path) < 0)
       mailboxesList.push(path)
     expect(response.status)
-      .withContext(`HTTP status code when creating the mailbox ${path}`)
+      .withContext(`HTTP status code when creating the mailbox ${path} (${response.raw})`)
       .toBe(expectedCode)
   }
 
@@ -284,8 +284,6 @@ describe('MailDAV', function() {
     await _makeMailbox('test-dav-mail-@-def')
     await _makeMailbox('test-dav-mail-%20-ghi')
     await _makeMailbox('test-dav-mail-%20-ghi', 500)
-    await _makeMailbox('test-dav-mail')
-    await _makeMailbox('test-dav-mail/test-dav-mail')
   })
 
   it(`Message creation`, async function() {

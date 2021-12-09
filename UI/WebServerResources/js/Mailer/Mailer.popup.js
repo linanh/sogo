@@ -130,19 +130,26 @@
   /**
    * @ngInject
    */
-  stateAccount.$inject = ['$stateParams', 'stateAccounts'];
-  function stateAccount($stateParams, stateAccounts) {
-    var account, mailboxes;
+  stateAccount.$inject = ['$q', '$window', '$stateParams', 'Account', 'stateAccounts'];
+  function stateAccount($q, $window, $stateParams, Account, stateAccounts) {
+    var account = null;
 
-    account = _.find(stateAccounts, function(account) {
-      return account.id == $stateParams.accountId;
-    });
-    if (account) {
-      // Fetch mailboxes
-      mailboxes = account.$getMailboxes();
-      return mailboxes.then(function () {
-        return account;
+    if ($window.opener) {
+      if ('$mailboxController' in $window.opener &&
+          'account' in $window.opener.$mailboxController &&
+          $window.opener.$mailboxController.account.id == $stateParams.accountId) {
+        // The message account is selected in the parent window
+        account = new Account($window.opener.$mailboxController.account.$omit(true));
+      }
+    }
+
+    if (!account) {
+      account = _.find(stateAccounts, function(account) {
+        return account.id == $stateParams.accountId;
       });
+    }
+    if (account) {
+      return $q.when(account);
     }
     else {
       // Account not found
@@ -153,11 +160,24 @@
   /**
    * @ngInject
    */
-  stateMailbox.$inject = ['$q', '$state', '$stateParams', 'stateAccount', 'decodeUriFilter', 'Mailbox'];
-  function stateMailbox($q, $state, $stateParams, stateAccount, decodeUriFilter, Mailbox) {
-    var mailbox,
+  stateMailbox.$inject = ['$q', '$window', '$state', '$stateParams', 'stateAccount', 'decodeUriFilter', 'Mailbox'];
+  function stateMailbox($q, $window, $state, $stateParams, stateAccount, decodeUriFilter, Mailbox) {
+    var mailbox = null,
+        futureMailbox = null,
         mailboxId = decodeUriFilter($stateParams.mailboxId),
         _find;
+
+    if ($window.opener) {
+      if ('$mailboxController' in $window.opener &&
+          'selectedFolder' in $window.opener.$mailboxController &&
+          'account' in $window.opener.$mailboxController &&
+          $window.opener.$mailboxController.account.id == stateAccount.id &&
+          $window.opener.$mailboxController.selectedFolder.path == mailboxId) {
+        // The message mailbox is opened in the parent window
+        mailbox = new Mailbox(stateAccount,
+                              $window.opener.$mailboxController.selectedFolder.$omit());
+      }
+    }
 
     // Recursive find function
     _find = function(mailboxes) {
@@ -174,16 +194,23 @@
       return mailbox;
     };
 
-    mailbox = _find(stateAccount.$mailboxes);
-
     if (mailbox) {
+      futureMailbox = $q.when(mailbox);
+    }
+    else {
+      futureMailbox = stateAccount.$getMailboxes().then(function(mailboxes) {
+        return _find(mailboxes);
+      });
+    }
+
+    return futureMailbox.then(function(mailbox) {
       mailbox.$topIndex = 0;
       mailbox.selectFolder();
       return mailbox;
-    }
-    else
+    }, function() {
       // Mailbox not found
       return $q.reject("Mailbox " + mailboxId + " doesn't exist");
+    });
   }
 
   /**

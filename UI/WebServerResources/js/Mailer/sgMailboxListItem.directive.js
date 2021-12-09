@@ -111,19 +111,21 @@
     this.editFolder = function($event) {
       $event.stopPropagation();
       $event.preventDefault();
-      this.editMode = true;
-      this.inputElement.value = this.mailbox.name;
-      this.clickableElement.classList.add('ng-hide');
-      this.inputContainer.classList.remove('ng-hide');
-      if ($event.srcEvent && $event.srcEvent.type == 'touchend') {
-        $timeout(function() {
-          $ctrl.inputElement.select();
-          $ctrl.inputElement.focus();
-        }, 200); // delayed focus for iOS
-      }
-      else {
-        this.inputElement.select();
-        this.inputElement.focus();
+      if (this.mailbox.$isEditable) {
+        this.editMode = true;
+        this.inputElement.value = this.mailbox.name;
+        this.clickableElement.classList.add('ng-hide');
+        this.inputContainer.classList.remove('ng-hide');
+        if ($event.srcEvent && $event.srcEvent.type == 'touchend') {
+          $timeout(function() {
+            $ctrl.inputElement.select();
+            $ctrl.inputElement.focus();
+          }, 200); // delayed focus for iOS
+        }
+        else {
+          this.inputElement.select();
+          this.inputElement.focus();
+        }
       }
       if (this.panel) {
         this.panel.close();
@@ -253,7 +255,7 @@
             $mdToast.show(
               $mdToast.simple()
                 .textContent(l('Folder compacted'))
-                .position('top right')
+                .position(sgConstant.toastPosition)
                 .hideDelay(3000));
           });
         };
@@ -271,7 +273,7 @@
             $mdToast.show(
               $mdToast.simple()
                 .textContent(successMsg)
-                .position('top right')
+                .position(sgConstant.toastPosition)
                 .hideDelay(3000));
           });
         };
