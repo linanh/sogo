@@ -25,9 +25,12 @@
           identity.textSignature = _.map(element.contents(), 'textContent').join(' ').trim();
         }
       });
-      _.forEach(this.$mailboxes, function(mailboxData, i, mailboxes) {
-        mailboxes[i] = new Account.$Mailbox(_this, mailboxData);
-      });
+      if (this.$mailboxes) {
+        // Create instances of Mailbox
+        Account.$Mailbox.$unwrapCollection(this, Account.$q.when({ mailboxes: this.$mailboxes })).then(function(collection) {
+          _this.$mailboxes = collection;
+        });
+      }
     }
     else {
       // The promise will be unwrapped first
@@ -362,6 +365,9 @@
         };
     mailbox = _find(this.$mailboxes);
 
+    if (mailbox == null)
+      throw Error('No mailbox found matching path ' + path);
+
     return mailbox;
   };
 
@@ -565,13 +571,13 @@
 
     if (deep) {
       _.forEach(this.$mailboxes, function(mailbox) {
-        mailboxes.push(mailbox.$omit());
+        mailboxes.push(mailbox.$omit(deep));
       });
       account.$mailboxes = mailboxes;
     }
 
     _.forEach(this.identities, function (identity) {
-      if (!identity.isReadOnly)
+      if (!identity.isReadOnly || deep)
         identities.push(_.pick(identity, ['email', 'fullName', 'replyTo', 'signature', 'isDefault']));
       if (identity.isDefault)
         defaultIdentity = identity;
