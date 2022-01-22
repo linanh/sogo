@@ -836,6 +836,7 @@
   NSArray *changedMessages, *headers;
   NSDictionary *requestContent, *data, *changedMessage;
   NSMutableArray *changedUids, *deletedUids;
+  NSRange r;
   NSString *syncToken, *newSyncToken, *uid;
   SOGoMailFolder *folder;
   WORequest *request;
@@ -847,6 +848,9 @@
   response = nil;
   folder = [self clientObject];
   syncToken = [requestContent objectForKey: @"syncToken"];
+
+  // We first make sure QRESYNC is enabled
+  [[folder imap4Connection] enableExtensions: [NSArray arrayWithObject: @"QRESYNC"]];
   newSyncToken = [folder davCollectionTag];
 
   if ([syncToken length] && ![syncToken isEqual: newSyncToken])
@@ -874,7 +878,11 @@
             }
 
           // Fetch headers for new or modified messages
-          headers = [self getHeadersForUIDs: changedUids
+          max = [changedUids count];
+          if (max > headersPrefetchMaxSize)
+            max = headersPrefetchMaxSize;
+          r = NSMakeRange(0, max);
+          headers = [self getHeadersForUIDs: [changedUids subarrayWithRange: r]
                                    inFolder: folder];
 
           data = [NSDictionary dictionaryWithObjectsAndKeys:
