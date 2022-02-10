@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007-2019 Inverse inc.
+  Copyright (C) 2007-2022 Inverse inc.
   Copyright (C) 2004-2005 SKYRIX Software AG
 
   This file is part of SOGo.
@@ -794,7 +794,7 @@ static Class iCalEventK = nil;
   if ([title length])
     [baseWhere
       addObject: [NSString stringWithFormat: @"c_title isCaseInsensitiveLike: '%%%@%%'",
-                           [title asSafeSQLString]]];
+                           [title asSafeSQLLikeString]]];
 
   if (component)
     {
@@ -1577,14 +1577,14 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
               if ([filters isEqualToString:@"title_Category_Location"] || [filters isEqualToString:@"entireContent"])
                 {
                   [baseWhere addObject: [NSString stringWithFormat: @"(c_title isCaseInsensitiveLike: '%%%@%%' OR c_category isCaseInsensitiveLike: '%%%@%%' OR c_location isCaseInsensitiveLike: '%%%@%%')",
-                                                  [title asSafeSQLString],
-                                                  [title asSafeSQLString],
-                                                  [title asSafeSQLString]]];
+                                                  [title asSafeSQLLikeString],
+                                                  [title asSafeSQLLikeString],
+                                                  [title asSafeSQLLikeString]]];
                 }
             }
           else
             [baseWhere addObject: [NSString stringWithFormat: @"c_title isCaseInsensitiveLike: '%%%@%%'",
-                                            [title asSafeSQLString]]];
+                                            [title asSafeSQLLikeString]]];
         }
       
       /* prepare mandatory fields */
@@ -2048,7 +2048,7 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
       error = nil;
     }
   else
-    error = [NSException exceptionWithHTTPStatus: 400
+    error = [NSException exceptionWithDAVStatus: 400
 			 reason: @"Bad color format (should be '#XXXXXXXX')."];
 
   return error;
@@ -2288,7 +2288,7 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
             }
         }
       if (!obj)
-        obj = [NSException exceptionWithHTTPStatus:404 /* Not Found */];
+        obj = [self exceptionWithHTTPStatus:404 /* Not Found */];
     }
 
   if (obj)
@@ -2645,8 +2645,8 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
   else if ([newName rangeOfString: @"transparent"].location != NSNotFound)
     [self setIncludeInFreeBusy: NO];
   else
-    error = [NSException exceptionWithHTTPStatus: 400
-                                          reason: @"Bad transparency value."];
+    error = [NSException exceptionWithDAVStatus: 400
+                                         reason: @"Bad transparency value."];
 
   return error;
 }
@@ -2666,8 +2666,8 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
       error = nil;
     }
   else
-    error = [NSException exceptionWithHTTPStatus: 400
-                                          reason: @"Bad boolean value."];
+    error = [NSException exceptionWithDAVStatus: 400
+                                         reason: @"Bad boolean value."];
 
   return error;
 }
@@ -2688,8 +2688,8 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
       error = nil;
     }
   else
-    error = [NSException exceptionWithHTTPStatus: 400
-                                          reason: @"Bad boolean value."];
+    error = [NSException exceptionWithDAVStatus: 400
+                                         reason: @"Bad boolean value."];
 
   return error;
 }
@@ -2710,8 +2710,8 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
       error = nil;
     }
   else
-    error = [NSException exceptionWithHTTPStatus: 400
-                                          reason: @"Bad boolean value."];
+    error = [NSException exceptionWithDAVStatus: 400
+                                         reason: @"Bad boolean value."];
 
   return error;
 }
@@ -2732,8 +2732,8 @@ firstInstanceCalendarDateRange: (NGCalendarDateRange *) fir
       error = nil;
     }
   else
-    error = [NSException exceptionWithHTTPStatus: 400
-                                          reason: @"Bad boolean value."];
+    error = [NSException exceptionWithDAVStatus: 400
+                                         reason: @"Bad boolean value."];
 
   return error;
 }

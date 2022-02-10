@@ -1,7 +1,7 @@
 /* SOGoObject.m - this file is part of SOGo
  *
  *  Copyright (C) 2004-2005 SKYRIX Software AG
- *  Copyright (C) 2006-2015 Inverse inc.
+ *  Copyright (C) 2006-2022 Inverse inc.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -682,8 +682,8 @@
 	    value = [self _webDAVResponse: localContext];
 	}
       else
-	value = [NSException exceptionWithHTTPStatus: 501 /* not implemented */
-			     reason: @"no WebDAV GET support?!"];
+	value = [NSException exceptionWithDAVStatus: 501 /* not implemented */
+                                             reason: @"no WebDAV GET support?!"];
     }
   else
     {
@@ -741,8 +741,8 @@
   // TODO: we might want to return the davEntityTag in the response
   [self debugWithFormat:@"etag '%@' does not match: %@", etag, 
 	[etags componentsJoinedByString:@","]];
-  return [NSException exceptionWithHTTPStatus:412 /* Precondition Failed */
-		      reason:@"Precondition Failed"];
+  return [NSException exceptionWithDAVStatus: 412 /* Precondition Failed */
+                                      reason:@"Precondition Failed"];
 }
 
 - (NSException *)checkIfNoneMatchCondition:(NSString *)_c inContext:(id)_ctx {
@@ -771,8 +771,8 @@
       [self debugWithFormat:@"etag '%@' matches: %@", etag, 
 	      [etags componentsJoinedByString:@","]];
       /* one etag matches, so stop the request */
-      return [NSException exceptionWithHTTPStatus:304 /* Not Modified */
-			  reason:@"object was not modified"];
+      return [NSException exceptionWithDAVStatus: 304 /* Not Modified */
+                                           reason: @"object was not modified"];
     }
     
     return nil;
@@ -1553,11 +1553,8 @@
                                  withObject: currentValue];
 	}
       else
-	exception
-	  = [NSException exceptionWithHTTPStatus: 403
-			 reason: [NSString stringWithFormat:
-					     @"Property '%@' cannot be set.",
-					   currentProp]];
+	exception = [NSException exceptionWithDAVStatus: 403
+                                                 reason: [NSString stringWithFormat: @"Property '%@' cannot be set.", currentProp]];
     }
 
   return exception;
@@ -1595,6 +1592,25 @@
 - (NSString *) labelForKey: (NSString *) key
 {
   return [self labelForKey: key inContext: context];
+}
+
+- (id) exceptionWithHTTPStatus: (unsigned short) theStatus
+{
+  if ([[context request] handledByDefaultHandler])
+    return [NSException exceptionWithHTTPStatus: theStatus];
+  else
+    return [NSException exceptionWithDAVStatus: theStatus];
+}
+
+- (id) exceptionWithHTTPStatus: (unsigned short) theStatus
+                        reason: (NSString *) theReason
+{
+  if ([[context request] handledByDefaultHandler])
+    return [NSException exceptionWithHTTPStatus: theStatus
+                                         reason: theReason];
+  else
+    return [NSException exceptionWithDAVStatus: theStatus
+                                        reason: theReason];
 }
 
 @end /* SOGoObject */

@@ -81,7 +81,7 @@
     }
 
   chain = sk_X509_new_null();
-  while (link = PEM_read_bio_X509_AUX(tbio, NULL, 0, NULL))
+  while ((link = PEM_read_bio_X509_AUX(tbio, NULL, 0, NULL)))
     sk_X509_unshift(chain, link);
 
   BIO_reset(tbio);
@@ -681,7 +681,7 @@ STACK_OF(X509_ALGOR) *CMS_get_smimecap(CMS_SignerInfo *si)
       memset(p, 0, 1024);
       buf = BIO_new(BIO_s_mem());
       X509_NAME_print_ex(buf, X509_get_subject_name(x), 0,
-                         ASN1_STRFLGS_ESC_CTRL | XN_FLAG_SEP_MULTILINE | XN_FLAG_FN_LN);
+                         ASN1_STRFLGS_ESC_CTRL | ASN1_STRFLGS_UTF8_CONVERT | XN_FLAG_SEP_MULTILINE | XN_FLAG_FN_LN);
       BIO_read(buf, p, 1024);
       subject = [NSString stringWithUTF8String: p];
       BIO_free(buf);
@@ -689,7 +689,7 @@ STACK_OF(X509_ALGOR) *CMS_get_smimecap(CMS_SignerInfo *si)
       memset(p, 0, 1024);
       buf = BIO_new(BIO_s_mem());
       X509_NAME_print_ex(buf, X509_get_issuer_name(x), 0,
-                             ASN1_STRFLGS_ESC_CTRL | XN_FLAG_SEP_MULTILINE | XN_FLAG_FN_LN);
+                             ASN1_STRFLGS_ESC_CTRL | ASN1_STRFLGS_UTF8_CONVERT | XN_FLAG_SEP_MULTILINE | XN_FLAG_FN_LN);
       BIO_read(buf, p, 1024);
       issuer = [NSString stringWithUTF8String: p];
       BIO_free(buf);

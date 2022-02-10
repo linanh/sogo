@@ -440,6 +440,17 @@
   return channel;
 }
 
+- (void) releaseConnection: (id) connection
+{
+  GCSChannelManager *cm;
+
+  if (connection)
+    {
+      cm = [GCSChannelManager defaultChannelManager];
+      [cm releaseChannel: connection];
+    }
+}
+
 - (NSDictionary *) _lookupContactEntry: (NSString *) theID
                          considerEmail: (BOOL) b
                               inDomain: (NSString *) domain
@@ -678,18 +689,16 @@
                               inDomain: (NSString *) domain
 {
   EOAdaptorChannel *channel;
-  GCSChannelManager *cm;
   NSDictionary *response;
 
-  cm = [GCSChannelManager defaultChannelManager];
   channel = (EOAdaptorChannel *)[self connection];
 
   response = [self _lookupContactEntry: theID
 			 considerEmail: b
 			      inDomain: domain
 		       usingConnection: channel];
-  if (channel)
-    [cm releaseChannel: channel];
+
+  [self releaseConnection: channel];
 
   return response;
 }
@@ -861,7 +870,7 @@
           if ([filter length])
             {
               lowerFilter = [filter lowercaseString];
-              lowerFilter = [lowerFilter asSafeSQLString];
+              lowerFilter = [lowerFilter asSafeSQLLikeString];
               filterFormat = [NSString stringWithFormat: @"LOWER(%%@) LIKE '%%%%%@%%%%'", lowerFilter];
               if (criteria)
                 criteriaList = [criteria objectEnumerator];
