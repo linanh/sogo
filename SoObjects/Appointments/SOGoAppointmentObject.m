@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007-2020 Inverse inc.
+  Copyright (C) 2007-2022 Inverse inc.
 
   This file is part of SOGo
 
@@ -151,7 +151,8 @@
           if (possibleName)
             {
               object = [folder lookupName: possibleName
-                                inContext: context acquire: NO];
+                                inContext: context
+                                  acquire: NO];
               if ([object isKindOfClass: [NSException class]] || [object isNew])
                 object = nil;
             }
@@ -163,10 +164,9 @@
   if (!object)
     {
       // Create the event in the user's personal calendar.
-      folder = [[SOGoUser userWithLogin: uid]
-                 personalCalendarFolderInContext: context];
+      folder = [[SOGoUser userWithLogin: uid] personalCalendarFolderInContext: context];
       object = [SOGoAppointmentObject objectWithName: nameInContainer
-				                                 inContainer: folder];
+                                         inContainer: folder];
       [object setIsNew: YES];
     }
 
@@ -531,11 +531,11 @@
   iCalPerson *currentAttendee;
   SOGoUser *user;
   SOGoUserSettings *us;
-  NSMutableArray *unavailableAttendees;
+  NSMutableArray *unavailableAttendees, *unavailableEmails;
   NSEnumerator *enumerator;
   NSString *currentUID, *ownerUID;
   NSMutableString *reason;
-  NSDictionary *values;
+  NSDictionary *values, *info;
   NSMutableDictionary *value, *moduleSettings;
   id whiteList;
   
@@ -545,6 +545,7 @@
 
   // Build list of the attendees uids
   unavailableAttendees = [[NSMutableArray alloc] init];
+  unavailableEmails = [NSMutableArray array];
   enumerator = [theAttendees objectEnumerator];
   ownerUID = [[[self context] activeUser] login];
 
@@ -573,6 +574,7 @@
                 {
                   values = [NSDictionary dictionaryWithObject:[user cn] forKey:@"Cn"];
                   [unavailableAttendees addObject:values];
+                  [unavailableEmails addObject: [currentAttendee rfc822Email]];
                 }
             }
         }
@@ -592,7 +594,14 @@
           if (i < count-2)
             [reason appendString:@", "];
         }
-      
+
+      if (count < [theAttendees count])
+        {
+          info = [NSDictionary dictionaryWithObjectsAndKeys:
+                                 reason, @"reject",
+                               unavailableEmails, @"unavailableAttendees", nil];
+          reason = [NSMutableString stringWithString: [info jsonRepresentation]];
+        }
       [unavailableAttendees release];
       
       return [self exceptionWithHTTPStatus:409 reason: reason];
@@ -898,10 +907,10 @@
     {
       currentUID = [currentAttendee uidInContext: context];
       if (currentUID)
-      [self _addOrUpdateEvent: newEvent
-                     oldEvent: nil
-                       forUID: currentUID
-                        owner: owner];
+        [self _addOrUpdateEvent: newEvent
+                       oldEvent: nil
+                         forUID: currentUID
+                          owner: owner];
     }
   
   return nil;
@@ -1722,10 +1731,10 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
         ex = [self exceptionWithHTTPStatus: 404 // Not Found
                                     reason: @"user does not participate in this calendar event"];
     }
-      else
-        ex = [self exceptionWithHTTPStatus: 500 // Server Error
-                                    reason: @"unable to parse event record"];
-  
+  else
+    ex = [self exceptionWithHTTPStatus: 500 // Server Error
+                                reason: @"unable to parse event record"];
+
   return ex;
 }
 
@@ -1766,11 +1775,16 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
     }
   else
     {
-      // The organizer deletes an occurence.
+      // The organizer (or a user with sufficient rights) deletes an occurence
       currentUser = [context activeUser];
 
       if (recurrenceId)
-        attendees = [occurence attendeesWithoutUser: currentUser];
+        {
+          if (activeUserIsOwner)
+            attendees = [occurence attendeesWithoutUser: currentUser];
+          else
+            attendees = [occurence attendeesWithoutUser: ownerUser];
+        }
       else
         attendees = [[event parent] attendeesWithoutUser: currentUser];
       
@@ -1886,8 +1900,8 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
 }
 
 //
-// iOS devices (and potentially others) send event invitations with no PARTSTAT defined.
-// This confuses DAV clients like Thunderbird, or event SOGo web. The RFC says:
+// [1] iOS devices (and potentially others) send event invitations with no PARTSTAT defined.
+// This confuses DAV clients like Thunderbird, or even SOGo web. RFC 5545 says:
 //
 //    Description: This parameter can be specified on properties with a
 //    CAL-ADDRESS value type. The parameter identifies the participation
@@ -1897,6 +1911,11 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
 //    match one of the values allowed for the given calendar component. If
 //    not specified on a property that allows this parameter, the default
 //    value is NEEDS-ACTION.
+//
+// [2] Thunderbird (and potentially others) send event invitations with no RSVP defined.
+// Without any RSVP, the Web interface won't allow the user to respond to the invitation.
+// For this reason, we set it to TRUE when missing, even though RFC 5545 says the default
+// value is FALSE.
 //
 - (void) _adjustPartStatInRequestCalendar: (iCalCalendar *) rqCalendar
 {
@@ -1922,6 +1941,8 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
 
               if (![[attendee partStat] length])
                 [attendee setPartStat: @"NEEDS-ACTION"];
+              if (![[attendee rsvp] length])
+                [attendee setRsvp: @"TRUE"];
             }
         }
     }
@@ -2495,9 +2516,12 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
   WORequest *rq;
   WOResponse *response;
   iCalCalendar *rqCalendar;
+  BOOL mustUpdate;
   
   rq = [_ctx request];
   rqCalendar = [iCalCalendar parseSingleFromSource: [rq contentAsString]];
+  mustUpdate = YES;
+  ex = nil;
 
   // We are unable to parse the received calendar, we return right away
   // with a 400 error code.
@@ -2507,7 +2531,69 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
                                           reason: @"Unable to parse event."];
     }
   
-  if (![self isNew])
+  if ([self isNew])
+    {
+      iCalEvent *masterEvent;
+      SOGoUser *ownerUser;
+
+      ownerUser = [SOGoUser userWithLogin: owner];
+      masterEvent = [[rqCalendar events] objectAtIndex: 0];
+
+      if (![masterEvent userIsOrganizer: ownerUser] && [masterEvent userIsAttendee: ownerUser])
+        {
+          ///
+          // This is a new event, but the user is an attendee; check if the event has
+          // already been saved to another calendar.
+          //
+          iCalCalendar *currentCalendar;
+          iCalEvent *currentMasterEvent;
+          NSArray *folders;
+          NSEnumerator *e;
+          NSString *organizerUID;
+          SOGoAppointmentFolder *folder;
+          SOGoAppointmentObject *object;
+
+          object = nil;
+          folders = [container lookupCalendarFoldersForUID: owner];
+          e = [folders objectEnumerator];
+          while ( object == nil && (folder = [e nextObject]) )
+            {
+              if (folder != [self container])
+                {
+                  object = [folder lookupName: nameInContainer
+                                    inContext: context
+                                      acquire: NO];
+                  if (![object isKindOfClass: [NSException class]] && ![object isNew])
+                    {
+                      currentCalendar = [object calendar: NO secure: NO];
+                      currentMasterEvent = [[currentCalendar events] objectAtIndex: 0];
+                      if ([[masterEvent sequence] compare: [currentMasterEvent sequence]] == NSOrderedAscending ||
+                          [[masterEvent sequence] isEqualToNumber: [currentMasterEvent sequence]])
+                        // Found older copy in another calendar, delete it
+                        [object delete];
+                      else
+                        // Found a higher sequence, ignore PUT
+                        mustUpdate = NO;
+                    }
+                }
+            }
+
+          // Verify if the event is still present in the organizer calendar
+          organizerUID = [[masterEvent organizer] uidInContext: context];
+          if (organizerUID)
+            {
+              object = [self _lookupEvent: [masterEvent uid]
+                                   forUID: organizerUID];
+              if ([object isNew])
+                {
+                  // The event has vanished
+                  return [NSException exceptionWithDAVStatus: 412
+                                                      reason: @"Precondition Failed"];
+                }
+            }
+        }
+    }
+  else
     {
       //
       // We must check for etag changes prior doing anything since an attendee could
@@ -2518,14 +2604,16 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
       if (ex)
         return ex;
     }
-  
-  ex = [self updateContentWithCalendar: rqCalendar fromRequest: rq];
+
+  if (mustUpdate)
+    ex = [self updateContentWithCalendar: rqCalendar fromRequest: rq];
+
   if (ex)
     response = (WOResponse *) ex;
   else
     {
       response = [_ctx response];
-      if (isNew)
+      if (isNew && mustUpdate)
         [response setStatus: 201 /* Created */];
       else
         [response setStatus: 204 /* No Content */];

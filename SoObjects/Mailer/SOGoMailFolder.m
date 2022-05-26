@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2009-2021 Inverse inc.
+  Copyright (C) 2009-2022 Inverse inc.
   Copyright (C) 2004-2005 SKYRIX Software AG
 
   This file is part of SOGo.
@@ -46,6 +46,8 @@
 
 #import <NGImap4/NGImap4Connection.h>
 #import <NGImap4/NGImap4Client.h>
+#import <NGImap4/NGImap4Envelope.h>
+#import <NGImap4/NGImap4EnvelopeAddress.h>
 #import <NGImap4/NSString+Imap4.h>
 
 #import <SOGo/DOMNode+SOGo.h>
@@ -69,9 +71,11 @@
 #import <SOGo/SOGoZipArchiver.h>
 
 #import "EOQualifier+MailDAV.h"
+#import "NSString+Mail.h"
 #import "SOGoMailAccount.h"
 #import "SOGoMailAccounts.h"
 #import "SOGoTrashFolder.h"
+#import "SOGoJunkFolder.h"
 #import "SOGoMailObject+Draft.h"
 
 
@@ -492,7 +496,7 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
 	  client = [[self imap4Connection] client];
 	  [imap4 selectFolder: [self imap4URL]];
 	}
-      result = [[client storeFlags: [NSArray arrayWithObject: @"Deleted"]
+      result = [[client storeFlags: [NSArray arrayWithObjects: @"Deleted", @"seen", nil]
 			   forUIDs: uids addOrRemove: YES]
                           objectForKey: @"result"];
       if ([result boolValue])
@@ -533,10 +537,13 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
   NSDictionary *msgs;
   NSArray *messages;
   NSData *content, *zipContent;
-  WOResponse *response;
-  SOGoZipArchiver *archiver;
   NSFileHandle *zipFileHandle;
+  SOGoZipArchiver *archiver;
+  SOGoUserDefaults *ud;
+  WOResponse *response;
   int i;
+
+  ud = [[context activeUser] userDefaults];
 
   if (!archiveName)
     archiveName = @"SavedMessages.zip";
@@ -560,15 +567,29 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
       return (WOResponse *)error;
   }
 
-  msgs = (NSDictionary *)[self fetchUIDs: uids  
-                                   parts: [NSArray arrayWithObject: @"BODY.PEEK[]"]];
+  msgs = (NSDictionary *)[self fetchUIDs: uids
+                                   parts: [NSArray arrayWithObjects: @"BODY.PEEK[]", @"ENVELOPE", nil]];
   messages = [msgs objectForKey: @"fetch"];
 
   for (i = 0; i < [messages count]; i++)
     {
+      NGImap4Envelope *envelope;
+      NSString *subject;
+      NSCalendarDate *date;
+      NSArray *froms;
+      NSString *from;
+
+      envelope = [[messages objectAtIndex: i] valueForKey: @"envelope"];
+      subject = [[envelope subject] decodedHeader];
+      date = [envelope date];
+      froms = [envelope from];
+      from = @"";
+      if ([froms count])
+        from = [[froms objectAtIndex: 0] email];
+      [date setTimeZone: [ud timeZone]];
       content = [[[messages objectAtIndex: i] objectForKey: @"body[]"] objectForKey: @"data"];
-      fileName = [NSString stringWithFormat:@"%@.eml", [uids objectAtIndex: i]];
-      [archiver putFileWithName: fileName andData: content];
+      fileName = [NSString stringWithFormat:@"%@ - %@ - %@.eml", [uids objectAtIndex: i], subject, date];
+      [archiver putFileWithName: [fileName asSafeFilename] andData: content];
     }
 
   [archiver close];
@@ -945,26 +966,12 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
 - (unsigned int) unseenCount
 {
   NSDictionary *imapResult;
-  NGImap4Connection *connection;
-  NGImap4Client *client;
-  EOQualifier *searchQualifier;
-  NSArray *searchResult;
   unsigned int unseen;
 
-  connection = [self imap4Connection];
-  client = [connection client];
-
-  if ([connection selectFolder: [self imap4URL]])
-    {
-      searchQualifier
-        = [EOQualifier qualifierWithQualifierFormat: @"flags = %@ AND not flags = %@",
-                       @"unseen", @"deleted"];
-      imapResult = [client searchWithQualifier: searchQualifier];
-      searchResult = [[imapResult objectForKey: @"RawResponse"] objectForKey: @"search"];
-      unseen = [searchResult count];
-    }
-  else
-    unseen = 0;
+  unseen = 0;
+  imapResult = [self statusForFlags: [NSArray arrayWithObject: @"unseen"]];
+  if (imapResult)
+    unseen = [[imapResult valueForKey: @"unseen"] intValue];
 
   return unseen;
 }
@@ -1139,6 +1146,14 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
                      isEqualToString:
                        [mailAccount trashFolderNameInContext: _ctx]])
             className = @"SOGoTrashFolder";
+          else if ([fullFolderName
+                     isEqualToString:
+                       [mailAccount junkFolderNameInContext: _ctx]])
+            className = @"SOGoJunkFolder";
+          else if ([fullFolderName
+                     isEqualToString:
+                       [mailAccount templatesFolderNameInContext: _ctx]])
+            className = @"SOGoTemplatesFolder";
           /*       else if ([folderName isEqualToString:
                    [mailAccount sieveFolderNameInContext: _ctx]])
                    obj = [self lookupFiltersFolder: _key inContext: _ctx]; */
@@ -1545,7 +1560,7 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
   if ([mailboxACL isKindOfClass: [NSException class]])
     {
       [[self imap4Connection] createMailbox: [[self imap4Connection] imap4FolderNameForURL: [self imap4URL]]
-				      atURL: [[self mailAccountFolder] imap4URL]];
+                                      atURL: [[self mailAccountFolder] imap4URL]];
       mailboxACL = [[self imap4Connection] aclForMailboxAtURL: [self imap4URL]];
     }
 
@@ -1652,13 +1667,24 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
 	  forUser: (NSString *) uid
 {
   NSString *acls, *folderName;
+  NSDictionary *result;
 
   acls = [self _sogoACLsToIMAPACLs: roles];
   folderName = [[self imap4Connection] imap4FolderNameForURL: [self imap4URL]];
-  [[imap4 client] setACL: folderName rights: acls uid: [self _sogoACLUIDToIMAPUID: uid]];
+  result = [[imap4 client] setACL: folderName rights: acls uid: [self _sogoACLUIDToIMAPUID: uid]];
 
   [mailboxACL release];
   mailboxACL = nil;
+
+  if (![[result valueForKey: @"result"] boolValue])
+    {
+      NSException *error;
+
+      error = [NSException exceptionWithName: @"SOGoMailException"
+                                      reason: @"Error while setting roles"
+                                    userInfo: (id)result];
+      [error raise];
+    }
 }
 
 - (NSString *) defaultUserID
@@ -2340,7 +2366,7 @@ static NSInteger _compareFetchResultsByUID (id entry1, id entry2, NSArray *uids)
 
   // We fetch new messages and modified messages
   if (highestmodseq)
-    {    
+    {
       EOKeyValueQualifier *kvQualifier;
       NSNumber *nextModseq;
 

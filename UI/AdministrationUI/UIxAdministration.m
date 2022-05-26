@@ -1,8 +1,6 @@
 /* UIxAdministration.m - this file is part of SOGo
  *
- * Copyright (C) 2009 Inverse inc.
- *
- * Author: Francis Lachapelle <flachapelle@inverse.ca>
+ * Copyright (C) 2022 Inverse inc.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +43,11 @@
   [super dealloc];
 }
 
+- (NSString *) moduleName
+{
+  return [self commonLabelForKey: @"Administration"];
+}
+
 - (NSString *) modulePath
 {
   return @"Administration";
@@ -56,4 +59,13 @@
   return [[request method] isEqualToString: @"POST"];
 }
 
+@end
+
+/* Theme Preview */
+
+@interface UIxThemePreview : UIxComponent
+@end
+
+
+@implementation UIxThemePreview
 @end

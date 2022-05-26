@@ -7,11 +7,11 @@
 "Print the current calendar view" = "Stampa vista calendario corrente";
 "Delete this event or task" = "Cancella questo evento o attività";
 "Go to today" = "Vai a oggi";
-"Switch to day view" = "Giorno";
-"Switch to week view" = "Settimana";
-"Switch to month view" = "Mese";
-"Switch to multi-columns day view" = "Cambia alla vista giornaliera";
-"Reload all calendars" = "Ricarica tutto i calendari";
+"Switch to day view" = "Cambia alla vista giornaliera";
+"Switch to week view" = "Cambia alla vista settimanale";
+"Switch to month view" = "Cambia alla vista mesile";
+"Switch to multi-columns day view" = "Cambia alla vista multi-colonna giornaliera";
+"Reload all calendars" = "Ricarica tutti i calendari";
 
 /* Tabs */
 "Date" = "Data";
@@ -52,8 +52,8 @@
 "Import Events..." = "Importa gli eventi...";
 "Import Events" = "Importa Eventi";
 "Select an iCalendar file (.ics)." = "Seleziona un file iCalendar (.ics).";
-"Upload" = "Upload";
-"Uploading" = "Uploading";
+"Upload" = "Carica";
+"Uploading" = "Caricamento";
 "Publish Calendar..." = "Pubblica Calendario...";
 "Reload Remote Calendars" = "Aggiorna Calendari Remoti";
 "Properties" = "Proprietà";
@@ -84,7 +84,7 @@
 "Public Access" = "Accesso Pubblico";
 "label_Public" = "Pubblico";
 "label_Private" = "Privato";
-"label_Confidential" = "Confidenziale";
+"label_Confidential" = "Riservato";
 "label_Viewer" = "Vedi Tutto";
 "label_DAndTViewer" = "Vedi Data e Ora";
 "label_Modifier" = "Modifica";
@@ -107,6 +107,7 @@
 "Name of the Calendar" = "Nome del Calendario";
 "new" = "Nuovo";
 "Print view" = "Anteprima di stampa";
+"Print" = "Stampa";
 "edit" = "Modifica";
 "delete" = "Cancella";
 "proposal" = "Proposta";
@@ -116,7 +117,7 @@
 "Attach" = "Allega";
 "Update" = "Aggiorna";
 "Cancel" = "Annulla";
-"Reset" = "Azzerare";
+"Reset" = "Pulisci campi";
 "Save" = "Salva";
 "show_rejected_apts" = "Visualizza appuntamenti rifiutati";
 "hide_rejected_apts" = "Nascondi appuntamenti rifiutati";
@@ -147,6 +148,7 @@
 "Display events and tasks colors" = "Visualizza colori per eventi ed attività";
 "Borders" = "Bordi";
 "Backgrounds" = "Sfondi";
+"Page Format" = "Formato Pagina";
 
 /* Appointments */
 "Appointment viewer" = "Visualizza Appuntamenti";
@@ -181,7 +183,7 @@
 "Reply" = "Risposta";
 "Created by" = "Creato da";
 "You are invited to participate" = "Sei invitato a partecipare";
-"Target" = "Percorso";
+"Target" = "Destinatario";
 "attributes" = "attributi";
 "attendees" = "invitati";
 "delegated from" = "delegato da";
@@ -219,6 +221,11 @@
 "view_next31" = "Prossimi 31 giorni";
 "view_thismonth" = "Questo Mese";
 "view_thisyear" = "Quest'anno";
+"view_last7" = "Ultimi 7 giorni";
+"view_last14" = "Ultimi 14 giorni";
+"view_last31" = "Ultimi 31 giorni";
+"view_lastmonth" = "Ultimo Mese";
+"view_lastyear" = "Ultimo Anno";
 "view_future" = "Tutti i prossimi eventi";
 "view_selectedday" = "Giorno Selezionato";
 "view_not_started" = "Attività non iniziate";
@@ -256,10 +263,10 @@
 
 /* access classes (privacy) */
 "PUBLIC_vevent" = "Evento Pubblico";
-"CONFIDENTIAL_vevent" = "Evento confidenziale";
+"CONFIDENTIAL_vevent" = "Evento riservato";
 "PRIVATE_vevent" = "Evento Privato";
 "PUBLIC_vtodo" = "Attività Pubblica";
-"CONFIDENTIAL_vtodo" = "Attività Confidenziale";
+"CONFIDENTIAL_vtodo" = "Attività Riservata";
 "PRIVATE_vtodo" = "Attività privata";
 
 /* status type */
@@ -318,9 +325,9 @@
 "Repeat until" = "Ripeti fino ";
 "End Repeat" = "Fine Ripetizione";
 "Never" = "Mai";
-"After" = "Dopo";
+"After" = "Dopo averlo ripetuto";
 "On Date" = "In data";
-"times" = "ore";
+"times" = "volte";
 "First" = "Primo";
 "Second" = "Secondo";
 "Third" = "Terzo";
@@ -330,8 +337,8 @@
 
 /* Appointment categories */
 "category_none" = "Nessuna";
-"category_labels" = "Anniversari,Compleanni,Lavoro,Chiamate,Clienti,Competizioni,Compratori,Preferiti,Incontri,Regali,Vacanze,Idee,Meeting,Problemi,Varie,Personale,Progetti,Giorno festivo,Stato,Fornitori,Viaggio,Chiusura";
-"repeat_NEVER" = "Non si ripete";
+"category_labels" = "Anniversari,Compleanni,Lavoro,Chiamate,Clienti,Competizioni,Clienti,Preferiti,Incontri,Regali,Vacanze,Idee,Incontri,Problemi,Varie,Personale,Progetti,Giorno festivo,Stato,Fornitori,Viaggio,Chiusura";
+"repeat_NEVER" = "Mai";
 "repeat_DAILY" = "Quotidianamente";
 "repeat_WEEKLY" = "Settimanalmente";
 "repeat_BI-WEEKLY" = "Bisettimanalmente";
@@ -360,11 +367,11 @@
 "reminder_WEEKS" = "settimane";
 "reminder_BEFORE" = "prima";
 "reminder_AFTER" = "dopo";
-"reminder_START" = "l'evento inizi";
-"reminder_END" = "l'evento termini";
+"reminder_START" = "dell'inizio dell'evento";
+"reminder_END" = "della fine dell'evento";
 "Reminder Details" = "Dettagli promemoria";
 "Choose a Reminder Action" = "Scegli l'azione dell'allarme";
-"Show an Alert" = "Mostra un allarme";
+"Show an Alert" = "Visualizza un allarme";
 "Send an E-mail" = "Invia una Email";
 "Email Organizer" = "Email dell'Organizzatore";
 "Email Attendees" = "Email dei Partecipanti";
@@ -412,10 +419,10 @@ validate_untilbeforeend    = "La ricorrenza deve finire dopo la prima occorrenza
 "New Task" = "Nuova attività";
 "Edit" = "Modifica";
 "Delete" = "Rimuovi";
-"Go to Today" = "Oggi";
-"Day View" = "Giorno";
-"Week View" = "Settimana";
-"Month View" = "Mese";
+"Go to Today" = "Vai a Oggi";
+"Day View" = "Vista Giornaliera";
+"Week View" = "Vista Settimanale";
+"Month View" = "Vista Mensile";
 "Reload" = "Ricarica";
 
 /* Number of selected components in events or tasks list */
@@ -430,11 +437,11 @@ validate_untilbeforeend    = "La ricorrenza deve finire dopo la prima occorrenza
 "Select All" = "Seleziona tutti";
 "Workweek days only" = "Solo giorni lavorativi";
 "Tasks in View" = "Attività in elenco";
-"eventDeleteConfirmation" = "Il seguente evento(i) sarà cancellato:";
-"taskDeleteConfirmation" = "Stai per cancellare in maniera permanente il l'attività.";
+"eventDeleteConfirmation" = "Il seguente evento(i) sarà eliminato:";
+"taskDeleteConfirmation" = "La seguente attività sarà eliminata:";
 "Would you like to continue?" = "Vuoi procedere?";
 "You cannot remove nor unsubscribe from your personal calendar."
-= "Non puoi rimuovere la sottoscrizione del tuo calendario personale.";
+= "Non è possibile rimuovere o annullare l'iscrizione dal tuo calendario personale.";
 "Are you sure you want to delete the calendar \"%{0}\"?"
 = "Sei sicuro di voler cancellare il calendario \"%{0}\"?";
 "Are you sure you want to delete the selected components?"
@@ -450,10 +457,10 @@ validate_untilbeforeend    = "La ricorrenza deve finire dopo la prima occorrenza
 "req-participant" = "Partecipante";
 
 /* Participant role: participation is optional */
-"Optional Participant" = "Partecipante non necessario";
+"Optional Participant" = "Partecipante opzionale";
 
 /* Participant role: participation is optional */
-"opt-participant" = "Partecipante non necessario";
+"opt-participant" = "Partecipante opzionale";
 
 /* Participant role: participant is copied for information purposes only */
 "Non Participant" = "Non Partecipante";
@@ -482,13 +489,13 @@ validate_untilbeforeend    = "La ricorrenza deve finire dopo la prima occorrenza
 "Free" = "Libero";
 "Busy" = "Occupato";
 "Maybe busy" = "Probabilmente occupato";
-"No free-busy information" = "Informazione non disponibile";
+"No free-busy information" = "Nessuna informazione libero-occupato";
 
 /* FreeBusy panel buttons and labels */
 "Suggest time slot" = "Periodo suggerito";
 "Zoom" = "Zoom";
-"Previous slot" = "Precedente";
-"Next slot" = "Successivo";
+"Previous slot" = "Slot precedente";
+"Next slot" = "Slot successivo";
 "Previous hour" = "Ora precedente";
 "Next hour" = "Ora successiva";
 "Work days only" = "Solo giorni lavorativi";
@@ -497,19 +504,21 @@ validate_untilbeforeend    = "La ricorrenza deve finire dopo la prima occorrenza
 "and" = "e";
 "A time conflict exists with one or more attendees.\nWould you like to keep the current settings anyway?"
 = "C'è un conflitto di orari con uno o più partecipanti.\nVuoi mantenere lo stesso questa impostazione?";
+"Would you like to remove them and send the invitation to the remaining attendees?"
+= "Desideri rimuoverli e inviare l'invito ai partecipanti rimanenti?";
 
 /* events list */
 "Due" = "Scadenza";
 "(Private Event)" = "(Evento privato)";
 vevent_class0 = "(Evento pubblico)";
 vevent_class1 = "(Evento privato)";
-vevent_class2 = "(Evento confidenziale)";
+vevent_class2 = "(Evento riservato)";
 
 /* tasks list */
 "Descending Order" = "Ordine Discendente";
 vtodo_class0 = "(Attività pubblica)";
 vtodo_class1 = "(Attività privata)";
-vtodo_class2 = "(Attività confidenziale)";
+vtodo_class2 = "(Attività riservata)";
 "closeThisWindowMessage" = "Grazie! Ora puoi chiudere la finestra ";
 "Multicolumn Day View" = "Vista per giorno multi-colonna";
 "Please select an event or a task." = "Per favore seleziona un evento o un'attività.";
@@ -547,7 +556,7 @@ vtodo_class2 = "(Attività confidenziale)";
 
 "Links to this Calendar" = "Link a questo Calendario";
 "Authenticated User Access" = "Tutti gli utenti autenticati";
-"CalDAV URL" = "CalDAV url";
+"CalDAV URL" = "CalDAV URL";
 "WebDAV ICS URL" = "WebDAV ICS URL";
 "WebDAV XML URL" = "WebDAV XML URL";
 
@@ -562,23 +571,23 @@ vtodo_class2 = "(Attività confidenziale)";
 "Please specify a calendar name." = "Prego specificare il nome del calendario";
 "tagNotDefined" = "E' necessario specificare un etichetta se si vuole sincronizzare questo calendario.";
 "tagAlreadyExists" = "L'etichetta specificata è già associata ad un altro calendario.";
-"tagHasChanged" = "Cambiando l'etichetta del calendario è necessario ricaricare tutti i dati sul dispositivo mobile.\nContinuare?";
+"tagHasChanged" = "Dopo aver modificato l'etichetta del calendario è necessario ricaricare tutti i dati sul dispositivo mobile.\nContinuare?";
 "tagWasAdded" = "Sincronizzando questo calendario sarà necessario ricaricare i dati sul dispositivo mobile.\nContinuare?";
-"tagWasRemoved" = "Rimuovendo questo calendario dalla sincronizzazione, sarà necessario ricaricare i dati sul dispositivo mobile.\nCotinuare?";
-"DestinationCalendarError" = "La sorgente e la destinazione dei calendari sono le stesse. Prego provare a copiare in un calendario differente.";
+"tagWasRemoved" = "Rimuovendo questo calendario dalla sincronizzazione sarà necessario ricaricare i dati sul dispositivo mobile.\nCotinuare?";
+"DestinationCalendarError" = "La sorgente e la destinazione dei calendari sono le stesse. Provare a copiare in un calendario differente.";
 "EventCopyError" = "La copia è fallita. Per favore prova a copiare in un calendario differente.";
-"Please select at least one calendar" = "Per favore seleziona almeno un calendari";
-"Open Task..." = "Apri attività...";
+"Please select at least one calendar" = "Per favore seleziona almeno un calendario";
+"Open Task..." = "Apri Attività...";
 "Mark Completed" = "Segna come completata";
-"Delete Task" = "Elimina attività";
-"Delete Event" = "Elimina evento";
-"Copy event to my calendar" = "Copia gli eventi sul mio calendario";
-"View Raw Source" = "Vedi sorgente";
+"Delete Task" = "Elimina Attività";
+"Delete Event" = "Elimina Evento";
+"Copy event to my calendar" = "Copia gli eventi nel mio calendario";
+"View Raw Source" = "Visualizza Sorgente";
 "Move To" = "Sposta In ";
 "Copy To" = "Copia In ";
 "Subscriptions" = "Sottoscrizioni";
-"Subscribe to a shared folder" = "Sottoscrivi una cartella condivisa";
-"Subscribe to a web calendar..." = "Sottoscrivi un calendario remoto...";
+"Subscribe to a shared calendar" = "Sottoscriviti a un calendario condiviso...";
+"Subscribe to a web calendar..." = "Sottoscriviti a un calendario remoto...";
 "URL of the Calendar" = "URL del Calendario";
 "Web Calendar" = "Calendario remoto";
 "Web Calendars" = "Calendari remoti";
@@ -588,16 +597,16 @@ vtodo_class2 = "(Attività confidenziale)";
 "quantity" = "quantità";
 "Current view" = "Vista corrente";
 "Selected events and tasks" = "Eventi ed attività selezionati";
-"Custom date range" = "Intervallo di dati personalizzato";
+"Custom date range" = "Intervallo di date personalizzato";
 "Select starting date" = "Seleziona data di partenza";
 "Select ending date" = "Seleziona data di fine";
 "Delegated to" = "Delegato a";
-"Keep sending me updates" = "Continua ad inviarmi aggiornamenti";
+"Keep sending me updates" = "Continua a mandarmi aggiornamenti";
 "OK" = "OK";
-"Confidential" = "Confidenziale";
+"Confidential" = "Riservato";
 "Enable" = "Abilita";
 "Filter" = "Filtra";
-"Sort" = "Ordinare";
+"Sort" = "Ordina";
 "Back" = "Indietro";
 "Day" = "Giorno";
 "Month" = "Mese";
@@ -619,7 +628,7 @@ vtodo_class2 = "(Attività confidenziale)";
 "Successfully subscribed to calendar" = "Sottoscrizione al calendario effettuata";
 
 /* Aria label for color chip button to select and unselect an event or task */
-"Toggle item" = "Azioni elemento";
+"Toggle item" = "Attiva-Disattiva elemento";
 
 /* Aria label for scope of search on events or tasks */
 "Search scope" = "Ambito di ricerca";

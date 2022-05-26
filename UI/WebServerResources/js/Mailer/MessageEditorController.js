@@ -6,8 +6,8 @@
   /**
    * @ngInject
    */
-  MessageEditorController.$inject = ['$scope', '$window', '$stateParams', '$mdConstant', '$mdUtil', '$mdDialog', '$mdToast', 'FileUploader', 'stateParent', 'stateAccount', 'stateMessage', 'onCompletePromise', 'encodeUriFilter', '$timeout', 'sgConstant', 'sgFocus', 'Dialog', 'AddressBook', 'Card', 'Preferences'];
-  function MessageEditorController($scope, $window, $stateParams, $mdConstant, $mdUtil, $mdDialog, $mdToast, FileUploader, stateParent, stateAccount, stateMessage, onCompletePromise, encodeUriFilter, $timeout, sgConstant, focus, Dialog, AddressBook, Card, Preferences) {
+  MessageEditorController.$inject = ['$scope', '$window', '$stateParams', '$mdUtil', '$mdDialog', '$mdToast', 'FileUploader', 'stateParent', 'stateAccount', 'stateMessage', 'onCompletePromise', 'encodeUriFilter', '$timeout', 'sgConstant', 'sgFocus', 'Dialog', 'AddressBook', 'Card', 'Preferences'];
+  function MessageEditorController($scope, $window, $stateParams, $mdUtil, $mdDialog, $mdToast, FileUploader, stateParent, stateAccount, stateMessage, onCompletePromise, encodeUriFilter, $timeout, sgConstant, focus, Dialog, AddressBook, Card, Preferences) {
     var vm = this;
 
     this.$onInit = function() {
@@ -15,8 +15,7 @@
       this.account = stateAccount;
       this.autocomplete = {to: {}, cc: {}, bcc: {}};
       this.autosave = null;
-      this.autosaveDrafts = autosaveDrafts;
-      this.cancel = cancel;
+
       this.isFullscreen = false;
       this.hideBcc = (stateMessage.editable.bcc.length === 0);
       this.hideCc = (stateMessage.editable.cc.length === 0);
@@ -24,12 +23,7 @@
       this.fromIdentity = stateMessage.editable.from;
       this.identitySearchText = '';
       this.message = stateMessage;
-      this.recipientSeparatorKeys = [
-        $mdConstant.KEY_CODE.ENTER,
-        $mdConstant.KEY_CODE.TAB,
-        $mdConstant.KEY_CODE.COMMA,
-        $mdConstant.KEY_CODE.SEMICOLON
-      ];
+      this.recipientSeparatorKeys = Preferences.defaults.emailSeparatorKeys;
       this.sendState = false;
       this.toggleFullscreen = toggleFullscreen;
       this.firstFocus = true;
@@ -43,7 +37,7 @@
 
       // Set the locale of CKEditor
       this.localeCode = Preferences.defaults.LocaleCode;
-      this.ckConfig = { language: Preferences.defaults.LocaleCode };
+      this.ckConfig = { language: Preferences.defaults.ckLocaleCode };
 
       this.composeType = Preferences.defaults.SOGoMailComposeMessageType;
 
@@ -83,6 +77,14 @@
           _addAttachments();
         });
       }
+      else if ($stateParams.actionName == 'compose') {
+        stateMessage.$compose().then(function(msgObject) {
+          vm.message = msgObject;
+          vm.fromIdentity = msgObject.editable.from;
+          _updateFileUploader();
+          _addAttachments();
+        });
+      }
       else if (angular.isDefined(stateMessage)) {
         this.message = stateMessage;
         _updateFileUploader();
@@ -100,7 +102,7 @@
         if ($window.opener) {
           if ('$mailboxController' in $window.opener &&
               'selectedFolder' in $window.opener.$mailboxController) {
-            if ($window.opener.$mailboxController.selectedFolder.type == 'draft') {
+            if ($window.opener.$mailboxController.selectedFolder.id == stateMessage.$mailbox.id) {
               ctrls.draftMailboxCtrl = $window.opener.$mailboxController;
               if ('$messageController' in $window.opener &&
                   $window.opener.$messageController.message.uid == stateMessage.uid) {
@@ -199,15 +201,15 @@
         angular.element(element).prop('value', null);
     };
 
-    function cancel() {
-      if (vm.autosave)
-        $timeout.cancel(vm.autosave);
+    this.cancel = function () {
+      if (this.autosave)
+        $timeout.cancel(this.autosave);
 
-      if (vm.message.isNew && vm.message.attachmentAttrs)
-        vm.message.$mailbox.$deleteMessages([vm.message]);
+      if (this.message.isNew && this.message.attachmentAttrs)
+        this.message.$mailbox.$deleteMessages([this.message]);
 
       $mdDialog.hide();
-    }
+    };
 
     // Fix for https://www.sogo.nu/bugs/view.php?id=4666
     this.ignoreReturn = function ($event) {
@@ -228,7 +230,7 @@
           ctrls.draftMailboxCtrl.selectedFolder.$filter().then(function() {
             if (ctrls.draftMessageCtrl) {
               // Reload selected message
-              ctrls.draftMessageCtrl.$state.go('mail.account.mailbox.message', { messageId: vm.message.uid });
+              ctrls.draftMessageCtrl.$state.go('mail.account.mailbox.message', { messageId: vm.message.uid, reload: true });
             }
           });
         }
@@ -304,7 +306,6 @@
 
     this.addRecipient = function (contact, field) {
       var recipients, recipient, list, i, address;
-      var emailRE = /([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)/i;
 
       recipients = this.message.editable[field];
 
@@ -319,7 +320,7 @@
                contact.charCodeAt(i) == 32 ||   // space
                contact.charCodeAt(i) == 44 ||   // ,
                contact.charCodeAt(i) == 59) &&  // ;
-              emailRE.test(address) &&
+              address.isValidEmail() &&
               recipients.indexOf(address) < 0) {
             recipients.push(address);
             address = '';
@@ -373,7 +374,7 @@
     };
 
     this.setFromIdentity = function (identity) {
-      var node, children, nl, reNl, space, signature, previousIdentity;
+      var node, children, nl, reNl, nlNb, space, signature, previousIdentity;
 
       if (identity && identity.full)
         this.message.editable.from = identity.full;
@@ -390,14 +391,20 @@
         space = ' ';
       }
 
+      // One newline above signature when placed at the bottom, two newlines when placed at the top (see HTML templates)
+      if (this.signaturePlacement == 'above')
+        nlNb = 2;
+      else
+        nlNb = 1;
+
       if (identity && identity.signature)
-        signature = nl + nl + '--' + space + nl + identity.signature;
+        signature = nl.repeat(nlNb) + '--' + space + nl + identity.signature;
       else
         signature = '';
 
       previousIdentity = _.find(this.identities, function (currentIdentity, index) {
         if (currentIdentity.signature) {
-          var currentSignature = new RegExp(reNl + reNl + '--' + space + reNl +
+          var currentSignature = new RegExp('(' + reNl + '){' + nlNb + '}--' + space + reNl +
                                             currentIdentity.signature.replace(/[-\[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
           if (vm.message.editable.text.search(currentSignature) >= 0) {
             vm.message.editable.text = vm.message.editable.text.replace(currentSignature, signature);
@@ -410,7 +417,7 @@
       if (!previousIdentity && signature.length > 0) {
         // Must place signature at proper place
         if (!this.isNew() && this.replyPlacement == 'above' && this.signaturePlacement == 'above') {
-          var quotedMessageIndex = this.message.editable.text.search(new RegExp(reNl + '.+?:( ?' + reNl + '){1,2}(> |<blockquote type="cite")'));
+          var quotedMessageIndex = this.message.editable.text.search(new RegExp(reNl + '.+?:( ?' + reNl + '){' + nlNb + '}(> |<blockquote type="cite")'));
           if (quotedMessageIndex >= 0) {
             this.message.editable.text =
               this.message.editable.text.slice(0, quotedMessageIndex) +
@@ -445,11 +452,11 @@
     };
 
     // Drafts autosaving
-    function autosaveDrafts() {
+    this.autosaveDrafts = function () {
       vm.message.$save();
       if (Preferences.defaults.SOGoMailAutoSave)
         vm.autosave = $timeout(vm.autosaveDrafts, Preferences.defaults.SOGoMailAutoSave*1000*60);
-    }
+    };
 
     this.isNew = function () {
       return typeof this.message.origin == 'undefined';

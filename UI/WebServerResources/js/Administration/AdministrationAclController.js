@@ -7,12 +7,13 @@
   /**
    * @ngInject
    */
-  AdministrationAclController.$inject = ['$timeout', '$state', '$mdMedia', '$mdToast', 'stateUser', 'stateFolder', 'User'];
-  function AdministrationAclController($timeout, $state, $mdMedia, $mdToast, stateUser, stateFolder, User) {
+  AdministrationAclController.$inject = ['$timeout', '$state', '$mdMedia', '$mdToast', 'stateUser', 'stateFolder', 'stateAcls', 'sgConstant', 'User'];
+  function AdministrationAclController($timeout, $state, $mdMedia, $mdToast, stateUser, stateFolder, stateAcls, sgConstant, User) {
     var vm = this;
 
     vm.user = stateUser;
     vm.folder = stateFolder;
+    vm.users = stateAcls;
     vm.folderType = angular.isDefined(stateFolder.$cards)? 'AddressBook' : 'Calendar';
     vm.selectedUser = null;
     vm.selectedUid = null;
@@ -29,9 +30,6 @@
     vm.userFilter = userFilter;
     vm.addUser = addUser;
 
-    stateFolder.$acl.$users(stateFolder.owner).then(function(data) {
-      vm.users = data;
-    });
 
     function getTemplate() {
       if (angular.isDefined(stateFolder.$cards))
@@ -94,9 +92,9 @@
       stateFolder.$acl.$saveUsersRights(stateFolder.owner).then(function() {
         $mdToast.show(
           $mdToast.simple()
-            .content(l('ACLs saved'))
-            .position('bottom right')
-            .hideDelay(3000)
+            .textContent(l('ACLs saved'))
+            .position(sgConstant.toastPosition)
+            .hideDelay(2000)
         );
         // Close acls on small devices
         if ($mdMedia('xs'))

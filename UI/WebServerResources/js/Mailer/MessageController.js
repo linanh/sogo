@@ -101,6 +101,8 @@
         // Cancel automatic mark as read
         if (vm.message.$markAsReadPromise)
           vm.service.$timeout.cancel(vm.message.$markAsReadPromise);
+        // Remove controller from window
+        delete $window.$messageController;
       });
 
     }; // $onInit
@@ -476,6 +478,12 @@
         this.message.$editableContent().then(function() {
           _showMailEditor($event, vm.message);
         });
+      }
+    };
+
+    this.compose = function($event) {
+      if (!this._showMailEditorInPopup('compose')) {
+        _showMailEditor($event, this.message.$compose());
       }
     };
 

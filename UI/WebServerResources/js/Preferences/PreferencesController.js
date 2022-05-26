@@ -7,8 +7,8 @@
   /**
    * @ngInject
    */
-  PreferencesController.$inject = ['$q', '$window', '$state', '$mdConstant', '$mdMedia', '$mdSidenav', '$mdDialog', '$mdToast', 'sgSettings', 'sgFocus', 'Dialog', 'User', 'Account', 'Preferences', 'Authentication'];
-  function PreferencesController($q, $window, $state, $mdConstant, $mdMedia, $mdSidenav, $mdDialog, $mdToast, sgSettings, focus, Dialog, User, Account, Preferences, Authentication) {
+  PreferencesController.$inject = ['$q', '$window', '$state', '$mdMedia', '$mdSidenav', '$mdDialog', '$mdToast', 'sgSettings', 'sgFocus', 'Dialog', 'User', 'Account', 'Preferences', 'Authentication'];
+  function PreferencesController($q, $window, $state, $mdMedia, $mdSidenav, $mdDialog, $mdToast, sgSettings, focus, Dialog, User, Account, Preferences, Authentication) {
     var vm = this, mailboxes = [], today = new Date().beginOfDay();
 
     this.$onInit = function() {
@@ -16,15 +16,9 @@
       this.passwords = { newPassword: null, newPasswordConfirmation: null, oldPassword: null };
       this.timeZonesList = $window.timeZonesList;
       this.timeZonesSearchText = '';
-      this.sieveVariablesCapability = ($window.sieveCapabilities.indexOf('variables') >= 0);
       this.addressesSearchText = '';
       this.mailLabelKeyRE = new RegExp(/^(?!^_\$)[^(){} %*\"\\\\]*?$/);
-      this.emailSeparatorKeys = [
-        $mdConstant.KEY_CODE.ENTER,
-        $mdConstant.KEY_CODE.TAB,
-        $mdConstant.KEY_CODE.COMMA,
-        $mdConstant.KEY_CODE.SEMICOLON
-      ];
+      this.emailSeparatorKeys = Preferences.defaults.emailSeparatorKeys;
       if (Preferences.defaults.SOGoMailAutoMarkAsReadMode == 'delay')
         this.mailAutoMarkAsReadDelay = Math.max(1, this.preferences.defaults.SOGoMailAutoMarkAsReadDelay);
       else
@@ -34,8 +28,10 @@
       if (Preferences.defaults.SOGoAlternateAvatar)
         User.$alternateAvatar = Preferences.defaults.SOGoAlternateAvatar;
 
-      if (sgSettings.activeUser('path').mail)
+      if (sgSettings.activeUser('path').mail) {
+        this.sieveVariablesCapability = ($window.sieveCapabilities.indexOf('variables') >= 0);
         this.preferences.hasActiveExternalSieveScripts();
+      }
       this.updateVacationDates();
     };
 

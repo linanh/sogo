@@ -1,8 +1,6 @@
 /* SOGoSieveManager.m - this file is part of SOGo
  *
- * Copyright (C) 2010-2019 Inverse inc.
- *
- * Author: Inverse <info@inverse.ca>
+ * Copyright (C) 2010-2022 Inverse inc.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -897,17 +895,18 @@ static NSString *sieveScriptName = @"sogo";
   if (thePassword)
     {
       imapClient = [NGImap4Client clientWithURL: [theAccount imap4URL]];
-      [imapClient login: theUsername  password: thePassword];
+      [imapClient authenticate: [user login] authname: theUsername password: thePassword];
     }
   else
     imapClient = [[theAccount imap4Connection] client];
 
   delimiter = [imapClient delimiter];
 
-  if (!delimiter)
-    [imapClient list: @"INBOX"  pattern: @""];
-
-  delimiter = [imapClient delimiter];
+  if (!delimiter && [imapClient isConnected])
+    {
+      [imapClient list: @"INBOX"  pattern: @""];
+      delimiter = [imapClient delimiter];
+    }
 
   if (!delimiter)
     delimiter = [dd stringForKey: @"NGImap4ConnectionStringSeparator"];
@@ -1158,9 +1157,12 @@ static NSString *sieveScriptName = @"sogo";
 
   if (values && [[values objectForKey: @"enabled"] boolValue])
     {
+      BOOL alwaysSend;
+      NSString *redirect;
       id addresses;
       int i;
 
+      alwaysSend = [[values objectForKey: @"alwaysSend"] boolValue];
       b = YES;
 
       addresses = [values objectForKey: @"forwardAddress"];
@@ -1171,11 +1173,22 @@ static NSString *sieveScriptName = @"sogo";
         {
           v = [addresses objectAtIndex: i];
           if (v && [v length] > 0)
-            [script appendFormat: @"redirect \"%@\";\r\n", v];
+            {
+              redirect = [NSString stringWithFormat: @"redirect \"%@\";\r\n", v];
+              if (alwaysSend)
+                [script insertString: redirect  atIndex: 0];
+              else
+                [script appendString: redirect];
+            }
         }
 
       if ([[values objectForKey: @"keepCopy"] boolValue])
-        [script appendString: @"keep;\r\n"];
+        {
+          if (alwaysSend)
+            [script insertString: @"keep;\r\n"  atIndex: 0];
+          else
+            [script appendString: @"keep;\r\n"];
+        }
     }
 
   // We handle header/footer Sieve scripts

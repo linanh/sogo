@@ -7,7 +7,7 @@
     xmlns:rsrc="OGo:url"
     xmlns:label="OGo:label"
     className="UIxPageFrame"
-    title="title"
+    title="moduleName"
     const:jsFiles="vendor/ckeditor/ckeditor.js, Common/sgCkeditor.component.js, Common.js, Preferences.services.js, Contacts.services.js, Scheduler.services.js, Mailer.js, Mailer.services.js, vendor/angular-file-upload.min.js, vendor/FileSaver.min.js">
   <script type="text/javascript">
     var mailAccounts = <var:string value="mailAccounts" const:escapeHTML="NO" />;
@@ -272,6 +272,11 @@
         <md-menu-item ng-show="::$menuCtrl.folder.$canFolderAs()">
           <md-button type="button" ng-click="$menuCtrl.setFolderAs('Junk')">
             <var:string label:value="Set as Junk"/>
+          </md-button>
+        </md-menu-item>
+        <md-menu-item ng-show="::$menuCtrl.folder.$canFolderAs()">
+          <md-button type="button" ng-click="$menuCtrl.setFolderAs('Templates')">
+            <var:string label:value="Set as Templates"/>
           </md-button>
         </md-menu-item>
         <md-divider ng-show="::($menuCtrl.folder.type != 'additional')"><!-- divider --></md-divider>

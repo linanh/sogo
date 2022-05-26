@@ -7,8 +7,8 @@
   /**
    * @ngInject
    */
-  AccountDialogController.$inject = ['$timeout', '$window', '$mdConstant', '$mdDialog', 'FileUploader', 'Dialog', 'sgSettings', 'defaults', 'account', 'accountId', 'mailCustomFromEnabled'];
-  function AccountDialogController($timeout, $window, $mdConstant, $mdDialog, FileUploader, Dialog, Settings, defaults, account, accountId, mailCustomFromEnabled) {
+  AccountDialogController.$inject = ['$timeout', '$window', '$mdDialog', 'FileUploader', 'Dialog', 'sgSettings', 'defaults', 'account', 'accountId', 'mailCustomFromEnabled'];
+  function AccountDialogController($timeout, $window, $mdDialog, FileUploader, Dialog, Settings, defaults, account, accountId, mailCustomFromEnabled) {
     var vm = this, usesSSO = $window.usesCASAuthentication || $window.usesSAML2Authentication;
 
     this.defaultPort = 143;
@@ -17,18 +17,12 @@
     this.accountId = accountId;
     this.hostnameRE = usesSSO && accountId > 0 ? /^(?!(127\.0\.0\.1|localhost(?:\.localdomain)?)$)/ : /./;
     this.addressesSearchText = '';
-    this.emailSeparatorKeys = [
-      $mdConstant.KEY_CODE.ENTER,
-      $mdConstant.KEY_CODE.TAB,
-      $mdConstant.KEY_CODE.COMMA,
-      $mdConstant.KEY_CODE.SEMICOLON
-    ];
     this.ckConfig = {
       'autoGrow_minHeight': 70,
       'toolbar': [['Bold', 'Italic', '-', 'Link',
                    'Font','FontSize','-','TextColor',
                    'BGColor', 'Source']],
-      language: defaults.LocaleCode
+      language: defaults.ckLocaleCode
     };
 
     if (!this.account.encryption)
@@ -59,7 +53,7 @@
     });
 
     this.hasIdentities = function () {
-      return _.filter(this.account.identities, vm.isEditableIdentity).length > 0;
+      return _.filter(this.account.identities, this.isEditableIdentity).length > 0;
     };
 
     this.isEditableIdentity = function (identity) {
@@ -90,7 +84,7 @@
     };
 
     this.canRemoveIdentity = function (index) {
-      return (index == this.selectedIdentity) && (this.account.identities.length > 1);
+      return (index == this.selectedIdentity) && this.hasIdentities();
     };
 
     this.removeIdentity = function (index) {

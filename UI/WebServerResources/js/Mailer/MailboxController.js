@@ -11,7 +11,9 @@
     var vm = this,
         defaultWindowTitle = angular.element($window.document).find('title').attr('sg-default') || "SOGo",
         hotkeys = [],
-        sortLabels;
+        sortLabels,
+        popupWindow = null,
+        msgHeight = 56; // must match md-item-size of md-list-item in UIxMailFolderTemplate
 
     sortLabels = {
       subject: 'Subject',
@@ -184,15 +186,58 @@
       return Preferences.defaults.SOGoMailComposeWindowEnabled;
     };
 
-    this.newMessage = function($event, inPopup) {
-      var message, onCompleteDeferred = $q.defer();
+    this.openInPopup = function(message, action) {
+      var url = [sgSettings.baseURL(),
+                 'UIxMailPopupView#!/Mail',
+                 this.account.id],
+          wId = this.account.id + '/' + Math.random(0, 1000);
+      if (message) {
+        // The double-encoding is necessary
+        url.push(encodeUriFilter(encodeUriFilter(message.$mailbox.path)));
+        url.push(message.uid);
+        wId = message.$absolutePath();
+      }
+      if (action) {
+        wId += '/' + action;
+        url.push(action);
+      }
+      url = url.join('/');
+      popupWindow = $window.open(url, wId,
+                                 ["width=680",
+                                  "height=520",
+                                  "resizable=1",
+                                  "scrollbars=1",
+                                  "toolbar=0",
+                                  "location=0",
+                                  "directories=0",
+                                  "status=0",
+                                  "menubar=0",
+                                  "copyhistory=0"]
+                                 .join(','));
+    };
 
-      if (vm.messageDialog === null) {
-        if (inPopup || Preferences.defaults.SOGoMailComposeWindow == 'popup')
-          _newMessageInPopup();
-        else {
-          message = vm.account.$newMessage();
-          vm.messageDialog = $mdDialog
+    this.closePopup = function() {
+      if ($window.document.body.classList.contains('popup'))
+        $window.close();
+    };
+
+    /**
+     * To keep track of the currently active dialog, we share a common variable with the parent controller.
+     */
+    function _messageDialog() {
+      if ($scope.mailbox) {
+        if (arguments.length > 0)
+          $scope.mailbox.messageDialog = arguments[0];
+        return $scope.mailbox.messageDialog;
+      }
+      return null;
+    }
+
+    function _showMailEditor($event, message) {
+      if (_messageDialog() === null) {
+        var onCompleteDeferred = $q.defer();
+        _messageDialog(
+          $mdDialog
             .show({
               parent: angular.element(document.body),
               targetEvent: $event,
@@ -215,34 +260,29 @@
             })
             .catch(_.noop) // Cancel
             .finally(function() {
-              vm.messageDialog = null;
-            });
-        }
+              _messageDialog(null);
+              vm.closePopup();
+            })
+        );
       }
+    }
+
+    this._showMailEditorInPopup = function(message, action, inPopup) {
+      if (!sgSettings.isPopup &&
+          (Preferences.defaults.SOGoMailComposeWindow == 'popup' || inPopup)) {
+        this.openInPopup(message, action);
+        return true;
+      }
+      return false;
     };
 
-    function _newMessageInPopup() {
-      var url = [sgSettings.baseURL(),
-                 'UIxMailPopupView#!/Mail',
-                 vm.account.id,
-                 // The double-encoding is necessary
-                 encodeUriFilter(encodeUriFilter(vm.selectedFolder.path)),
-                 'new']
-          .join('/'),
-          wId = vm.selectedFolder.$id() + '/' + Math.random(0, 1000);
-      $window.open(url, wId,
-                   ["width=680",
-                    "height=520",
-                    "resizable=1",
-                    "scrollbars=1",
-                    "toolbar=0",
-                    "location=0",
-                    "directories=0",
-                    "status=0",
-                    "menubar=0",
-                    "copyhistory=0"]
-                   .join(','));
-    }
+    this.newMessage = function($event, inPopup) {
+      if (!this._showMailEditorInPopup(null, 'new', inPopup)) {
+        this.account.$newMessage().then(function(message) {
+          _showMailEditor($event, message);
+        });
+      }
+    };
 
     /**
      * User has pressed up arrow key
@@ -253,7 +293,7 @@
       if (angular.isDefined(index)) {
         index--;
         if (vm.selectedFolder.$topIndex > 0)
-          vm.selectedFolder.$topIndex--;
+          _scrollToIndex(index);
       }
       else {
         // No message is selected, show oldest message
@@ -278,7 +318,7 @@
       if (angular.isDefined(index)) {
         index++;
         if (vm.selectedFolder.$topIndex < vm.selectedFolder.getLength())
-          vm.selectedFolder.$topIndex++;
+          _scrollToIndex(index);
       }
       else
         // No message is selected, show newest
@@ -292,6 +332,20 @@
       $event.preventDefault();
 
       return index;
+    }
+
+    /**
+     * Perform a smoother scrolling than modifying vm.selectedFolder.$topIndex directly
+     */
+    function _scrollToIndex(index) {
+      var scroller = document.querySelector('[ui-view=mailbox] .md-virtual-repeat-scroller'),
+          scrollTop = index * msgHeight;
+
+      if (scrollTop < scroller.scrollTop || (scrollTop + msgHeight) > scroller.scrollTop + scroller.clientHeight)
+        document.querySelectorAll('.md-virtual-repeat-scroller')[1].scrollTo({
+          top: msgHeight * index - (scroller.clientHeight - msgHeight)/2,
+          behavior: 'smooth'
+        });
     }
 
     function _addNextMessageToSelection($event) {
@@ -316,9 +370,9 @@
 
     this.selectMessage = function(message) {
       if (Mailbox.$virtualMode)
-        $state.go('mail.account.virtualMailbox.message', {mailboxId: encodeUriFilter(message.$mailbox.path), messageId: message.uid});
+        $state.go('mail.account.virtualMailbox.message', {mailboxId: encodeUriFilter(encodeUriFilter(message.$mailbox.path)), messageId: message.uid});
       else
-        $state.go('mail.account.mailbox.message', {messageId: message.uid});
+        $state.go('mail.account.mailbox.message', {mailboxId: encodeUriFilter(encodeUriFilter(message.$mailbox.path)), messageId: message.uid});
     };
 
     this.toggleMessageSelection = function($event, message) {
@@ -575,6 +629,20 @@
               message.$mailbox.unseenCount--;
             message.isread = true;
           });
+        });
+      }
+    };
+
+    this.forwardSelectedMessages = function($event) {
+      var _this = this,
+          selectedMessages = vm.selectedFolder.selectedMessages();
+      if (_.size(selectedMessages) > 0) {
+        vm.selectedFolder.forwardMessages(selectedMessages).then(function(message) {
+          if (!_this._showMailEditorInPopup(message, 'edit')) {
+            message.$editableContent().then(function() {
+              _showMailEditor($event, message);
+            });
+          }
         });
       }
     };

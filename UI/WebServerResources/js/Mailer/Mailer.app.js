@@ -109,6 +109,11 @@
             controllerAs: 'viewer'
           }
         },
+        params: {
+          reload: {
+            value: false
+          }
+        },
         onEnter: onEnterMessage,
         onExit: onExitMessage,
         resolve: {
@@ -144,7 +149,7 @@
 
     // Try to register SOGo has an handler for mailto: links
     if (navigator && navigator.registerProtocolHandler) {
-      var mailtoURL = window.location.origin + window.ApplicationBaseURL + 'UIxMailPopupView#!/Mail/0/INBOX/new?%s';
+      var mailtoURL = window.location.origin + window.ApplicationBaseURL + 'UIxMailPopupView#!/Mail/0/new?%s';
       try {
         navigator.registerProtocolHandler('mailto', mailtoURL, 'SOGo');
       }
@@ -318,7 +323,7 @@
     });
 
     if (message && message.$reload) {
-      return message.$reload({useCache: true});
+      return message.$reload({useCache: !$stateParams.reload, nocache: $stateParams.reload});
     }
     else {
       // Message not found

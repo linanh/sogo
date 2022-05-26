@@ -105,11 +105,12 @@
         // Local recursive function
         createMailboxes = function(level, mailbox) {
           mailbox.isSentFolder = mailbox.isSentFolder || mailbox.type == 'sent';
+          mailbox.isDraftsFolder = mailbox.isDraftsFolder || mailbox.type == 'draft';
           for (var i = 0; i < mailbox.children.length; i++) {
             mailbox.children[i].level = level;
             mailbox.children[i] = new Mailbox(account, mailbox.children[i]);
-            if (mailbox.isSentFolder)
-              mailbox.children[i].isSentFolder = true;
+            mailbox.children[i].isSentFolder = mailbox.isSentFolder;
+            mailbox.children[i].isDraftsFolder = mailbox.isDraftsFolder;
             createMailboxes(level+1, mailbox.children[i]);
           }
         };
@@ -202,6 +203,10 @@
       else if (this.type == 'junk') {
         this.$displayName = l('JunkFolderName');
         this.$icon = 'thumb_down';
+      }
+      else if (this.type == 'templates') {
+        this.$displayName = l('TemplatesFolderName');
+        this.$icon = 'mail_outline';
       }
       else if (this.type == 'additional') {
         this.$icon = 'folder';
@@ -398,7 +403,9 @@
         }
       });
     }
-    else if (!sortingAttributes && this.$syncToken) {
+    else if (!sortingAttributes && !this.$flaggedOnly && !this.$unseenOnly && this.$syncToken) {
+      // Fetch changes only if sorting attributes haven't changed, and view is not limited to
+      // unseen messages or flagged messages.
       action = 'changes';
       options.syncToken = this.$syncToken;
     }
@@ -738,6 +745,23 @@
 
     return Mailbox.$$resource.post(this.id, 'addOrRemoveLabel', data).then(function() {
       return messages;
+    });
+  };
+
+  /**
+   * @function forwardMessages
+   * @memberof Mailbox.prototype
+   * @desc Attach multiple messages to a new draft
+   * @returns a promise of the HTTP operation with the draft coordinates
+   */
+  Mailbox.prototype.forwardMessages = function(messages) {
+    var _this = this,
+        uids = _.map(messages, 'uid');
+
+    return Mailbox.$$resource.post(this.id, 'forwardMessages', { uids: uids }).then(function(data) {
+      Mailbox.$log.debug('Forward selected messages: ' + JSON.stringify(data, undefined, 2));
+      var message = new Mailbox.$Message(data.accountId, _this.$account.$getMailboxByPath(data.mailboxPath), data);
+      return message;
     });
   };
 

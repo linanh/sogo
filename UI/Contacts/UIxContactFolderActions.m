@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006-2021 Inverse inc.
+  Copyright (C) 2006-2022 Inverse inc.
 
   This file is part of SOGo
 
@@ -165,6 +165,8 @@ static NSArray *photoTags = nil;
   NSMutableDictionary *entry, *encodedEntry;
   SOGoContactLDIFEntry *ldifEntry;
   NSArray *ldifContacts, *lines;
+  EOAdaptorChannel *channel;
+  GCSFolder *gcsFolder;
   SOGoContactGCSFolder *folder;
   NSEnumerator *keyEnumerator;
   NSString *key, *uid, *line;
@@ -206,7 +208,9 @@ static NSArray *photoTags = nil;
               continue;
             }
 
-          if (j == 0)
+          if (j == 0 && ![line hasPrefix: @"dn:"])
+            // Because we splitted contacts on "<LF> + dn", we need to restore the dn prefix,
+            // unless it's the first contact of the file, in which case it still has the dn prefix.
             line = [NSString stringWithFormat: @"dn%@", line];
 
           /* handle continuation lines */
@@ -315,7 +319,10 @@ static NSArray *photoTags = nil;
     }
 
   // Force update of quick table
-  [[[[[self clientObject] ocsFolder] acquireQuickChannel] adaptorContext] commitTransaction];
+  gcsFolder = [folder ocsFolder];
+  channel = [gcsFolder acquireQuickChannel];
+  [[channel adaptorContext] commitTransaction];
+  [gcsFolder releaseChannel: channel];
 
   // Convert groups to vLists
   count = [ldifListEntries count];
@@ -331,29 +338,39 @@ static NSArray *photoTags = nil;
 
 - (int) importVcardData: (NSString *) vcardData
 {
+  NGVList *vList;
   NSAutoreleasePool *pool;
   NSArray *allCards;
-  int rc, count;
+  NSMutableArray *allLists;
+  int rc, count, i;
 
   rc = 0;
 
   pool = [[NSAutoreleasePool alloc] init];
   allCards = [NGVCard parseFromSource: vcardData];
+  allLists = [NSMutableArray array];
 
   count = [allCards count];
   if (allCards && count)
     {
-      int i;
-
       for (i = 0; i < count; i++)
 	{
-	  if (![self importVcard: [allCards objectAtIndex: i]])
-	    {
-	      rc = 0;
-	      break;
-	    }
-	  else
-	    rc++;
+          // Postpone importation of lists
+	  if ([self importVcard: [allCards objectAtIndex: i]
+                        andLists: allLists])
+            rc++;
+        }
+    }
+
+  // Import vLists
+  count = [allLists count];
+  if (count)
+    {
+      for (i = 0; i < count; i++)
+	{
+	  vList = [allLists objectAtIndex: i];
+          if ([self importVlist: vList])
+            rc++;
 	}
     }
 
@@ -364,31 +381,49 @@ static NSArray *photoTags = nil;
 
 - (BOOL) importVcard: (NGVCard *) card
 {
+  return [self importVcard: card
+                  andLists: nil];
+}
+
+- (BOOL) importVcard: (NGVCard *) card
+            andLists: (NSMutableArray *) lists
+{
+  BOOL rc;
   SOGoContactGCSFolder *folder;
   SOGoContactGCSEntry *contact;
+  NGVList *list;
   NSAutoreleasePool *pool;
   NSString *uid;
 
-  BOOL rc = NO;
+  rc = NO;
 
   if (card)
     {
       pool = [[NSAutoreleasePool alloc] init];
       folder = [self clientObject];
 
-      // TODO: shall we add .vcf as in [SOGoContactGCSEntry copyToFolder:]
       uid = [card uid];
       if (![uid length])
         {
+          // TODO: shall we add .vcf as in [SOGoContactGCSEntry copyToFolder:]
           uid = [folder globallyUniqueObjectId];
           [card setUid: uid];
         }
-      contact = [SOGoContactGCSEntry objectWithName: uid
-                                        inContainer: folder];
-      [contact setIsNew: YES];
-      [contact saveComponent: card];
 
-      rc = YES;
+      if ([[card tag] isEqualToString: @"VLIST"])
+        {
+          list = [NGVList parseSingleFromSource: [card versitString]];
+          [lists addObject: list];
+        }
+      else
+        {
+          contact = [SOGoContactGCSEntry objectWithName: uid
+                                        inContainer: folder];
+          [contact setIsNew: YES];
+          [contact saveComponent: card];
+          rc = YES;
+        }
+
       RELEASE(pool);
     }
 
@@ -409,8 +444,13 @@ static NSArray *photoTags = nil;
       pool = [[NSAutoreleasePool alloc] init];
       folder = [self clientObject];
 
-      // TODO: shall we add .vcf as in [SOGoContactGCSEntry copyToFolder:]
       uid = [list uid];
+      if (![uid length])
+        {
+          // TODO: shall we add .vcf as in [SOGoContactGCSEntry copyToFolder:]
+          uid = [folder globallyUniqueObjectId];
+          [list setUid: uid];
+        }
       contact = [SOGoContactGCSList objectWithName: uid
                                        inContainer: folder];
       [contact setIsNew: YES];

@@ -68,6 +68,8 @@
 
 /* forward messages */
 "Forward incoming messages" = "Ankommende Nachrichten weiterleiten";
+"Always forward" = "Immer weiterleiten";
+"Incoming messages are forwarded prior to apply your filters." = "Eingehende Nachrichten werden vor Anwendung Deiner Filter weitergeleitet";
 "Keep a copy" = "Eine Kopie behalten";
 "Enter an email" = "E-Mail eingeben";
 "Add another email" = "Weitere E-Mail hinzufügen";
@@ -99,10 +101,7 @@
 "shortDateFmt_11" = "%y.%m.%d";
 "shortDateFmt_12" = "%Y/%m/%d";
 "shortDateFmt_13" = "%Y.%m.%d";
-"shortDateFmt_14" = "%Y.%m.%d";
-"shortDateFmt_15" = "%d.%m.%Y";
-"shortDateFmt_16" = "%d.%m.%y";
-"shortDateFmt_17" = "";
+"shortDateFmt_14" = "";
 
 "longDateFmt_0" = "%A, %d. %B %Y";
 "longDateFmt_1" = "%A, %e. %B %Y";

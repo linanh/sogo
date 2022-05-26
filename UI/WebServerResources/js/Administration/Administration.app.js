@@ -43,7 +43,18 @@
         },
         resolve: {
           stateUser: stateUser,
-          stateFolder: stateFolder
+          stateFolder: stateFolder,
+          stateAcls: stateAcls
+        }
+      })
+      .state('administration.theme', {
+        url: '/theme',
+        views: {
+          module: {
+            templateUrl: 'UIxThemePreview', // UI/Templates/Administration/UIxThemePreview.wox
+            controller: 'ThemePreviewController',
+            controllerAs: 'ctrl'
+          }
         }
       });
 
@@ -108,6 +119,11 @@
     stateUser.selectedFolder = o.id;
 
     return o;
+  }
+
+  stateAcls.$inject = ['stateFolder'];
+  function stateAcls(stateFolder) {
+    return stateFolder.$acl.$users(stateFolder.owner);
   }
 
   /**

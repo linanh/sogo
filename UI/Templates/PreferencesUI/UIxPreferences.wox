@@ -7,7 +7,7 @@
     xmlns:rsrc="OGo:url"
     xmlns:label="OGo:label"
     className="UIxPageFrame"
-    title="title"
+    title="moduleName"
     const:jsFiles="vendor/ckeditor/ckeditor.js, Common/sgCkeditor.component.js, vendor/angular-file-upload.min.js, vendor/ng-sortable.min.js, vendor/qrcode.min.js, Common.js, Preferences.js, Preferences.services.js, Mailer.services.js, Contacts.services.js">
 
   <main layout-fill="layout-fill" ui-view="preferences"
@@ -23,7 +23,7 @@
     var defaultContactsCategories = <var:string value="defaultContactsCategories" const:escapeHTML="NO"/>;
     var forwardConstraints = <var:string value="forwardConstraints" const:escapeHTML="NO"/>;
     var forwardConstraintsDomains = <var:string value="forwardConstraintsDomains" const:escapeHTML="NO"/>;
-    var sieveCapabilities = <var:string value="sieveCapabilities" const:escapeHTML="NO"/>;
+    <var:if condition="userHasMailAccess"> var sieveCapabilities = <var:string value="sieveCapabilities" const:escapeHTML="NO"/>;</var:if>
   </script>
 
   <script type="text/ng-template" id="preferences.html">
@@ -1251,6 +1251,16 @@
                       <!-- forward addresses -->
                     </md-chips>
                 </md-input-container>
+
+                <div>
+                  <md-checkbox
+                      ng-model="app.preferences.defaults.Forward.alwaysSend"
+                      ng-true-value="1"
+                      ng-false-value="0">
+                    <var:string label:value="Always forward"/>
+                    <div class="sg-hint"><var:string label:value="Incoming messages are forwarded prior to apply your filters."/></div>
+                  </md-checkbox>
+                </div>
 
                 <div>
                   <md-checkbox
