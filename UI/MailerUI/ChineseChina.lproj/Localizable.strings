@@ -171,6 +171,7 @@
 "InboxFolderName"  = "收件箱";
 "DraftsFolderName" = "草稿箱";
 "JunkFolderName" = "垃圾邮件";
+"TemplatesFolderName" = "模板";
 "SieveFolderName"  = "过滤器";
 "Folders"          = "目录"; /* title line */
 
