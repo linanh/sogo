@@ -187,7 +187,7 @@
 "InboxFolderName"  = "收件匣";
 "DraftsFolderName" = "草稿匣";
 "JunkFolderName" = "垃圾信件";
-"TemplatesFolderName" = "Templates";
+"TemplatesFolderName" = "模板";
 "SieveFolderName"  = "過濾原則";
 "Folders"          = "信件匣"; /* title line */
 

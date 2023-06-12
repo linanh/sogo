@@ -70,6 +70,10 @@
               <p class="sg-item-name"><var:string label:value="Mail"/></p>
             </md-list-item>
           </var:if>
+		  <md-list-item>
+              <md-icon>enhanced_encryption</md-icon>
+              <a class="md-button" style="text-align:left; margin:-24px" href="/webmail-v1.sf/views/pages/ptools.html">其他(Other Setting)</a>
+          </md-list-item>
         </md-list>
       </md-content>
     </md-sidenav>

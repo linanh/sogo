@@ -12,7 +12,7 @@
   NSDateTimeOrdering = MDYH;
   NSDecimalDigits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
   NSDecimalSeparator = ".";
-  NSEarlierTimeDesignations = ("之前", "剩餘", "之後", "前");
+  NSEarlierTimeDesignations = ("之前", "剩下", "之后", "前");
   NSHourNameDesignations = ((0, "半夜"), (10, "早上"), (12, "中午", "午餐"), (14, "下午"), (19, "晚餐"));
   NSInternationalCurrencyString = CNY; /* ISO 4217 */
   NSLaterTimeDesignations = ("下一個");

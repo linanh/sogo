@@ -199,7 +199,7 @@
 	{
 	  if ([[[[newConnection client] capability] objectForKey: @"capability"] containsObject: @"id"])
 	    {
-	      [[newConnection client] processCommand: [NSString stringWithFormat: @"ID (\"x-originating-ip\" \"%@\")", remoteHost]];
+	      [[newConnection client] processCommand: [NSString stringWithFormat: @"ID (\"x-originating-ip\" \"%@\" \"name\" \"sogo\")", remoteHost]];
 	    }
 	}
     }
