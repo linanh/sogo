@@ -149,7 +149,7 @@
 "read"    = "Lus";
 "unread"  = "Non Lus";
 "deleted" = "Effacés";
-"flagged" = "Drapeau";
+"flagged" = "Marqués";
 
 /* MailListView */
 "Sender" = "Expéditeur";
@@ -319,7 +319,6 @@
 "Thread As Read" = "La discussion comme lue";
 "As Read By Date..." = "Comme lus par date...";
 "All Read" = "Tous les messages comme lus";
-"Flag" = "Avec un drapeau";
 "As Junk" = "Comme indésirable";
 "As Not Junk" = "Comme acceptable";
 "Run Junk Mail Controls" = "Lancer le contrôle des indésirables";
@@ -445,6 +444,8 @@
 "Back" = "Retour";
 "Copy messages" = "Copier les messages";
 "More messages options" = "Options messages avancées";
+"Flag" = "Marquer";
+"Unflag" = "Démarquer";
 "Mark as Unread" = "Marquer comme non-lu";
 "Mark as Read" = "Marquer comme lu";
 "Closing Window ..." = "Fermer la fenêtre...";
@@ -457,6 +458,8 @@
 "Your email has been saved" = "Votre courriel a été sauvegardé";
 "Your email has been sent" = "Votre courriel a été envoyé";
 "Folder compacted" = "Dossier compressé";
+
+"More Options" = "Plus d'Options";
 
 "New draft" = "Nouveau message";
 "Create new draft with this template" = "Créer un nouveau message à partir de ce modèle";

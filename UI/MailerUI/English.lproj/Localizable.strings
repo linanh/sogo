@@ -319,7 +319,6 @@
 "Thread As Read" = "Thread As Read";
 "As Read By Date..." = "As Read By Date...";
 "All Read" = "All Read";
-"Flag" = "Flag";
 "As Junk" = "As Junk";
 "As Not Junk" = "As Not Junk";
 "Run Junk Mail Controls" = "Run Junk Mail Controls";
@@ -445,6 +444,8 @@
 "Back" = "Back";
 "Copy messages" = "Copy messages";
 "More messages options" = "More messages options";
+"Flag" = "Flag";
+"Unflag" = "Unflag";
 "Mark as Unread" = "Mark as Unread";
 "Mark as Read" = "Mark as Read";
 "Closing Window ..." = "Closing Window ...";
@@ -457,6 +458,8 @@
 "Your email has been saved" = "Your email has been saved";
 "Your email has been sent" = "Your email has been sent";
 "Folder compacted" = "Folder compacted";
+
+"More Options" = "More Options";
 
 "New draft" = "New draft";
 "Create new draft with this template" = "Create new draft with this template";

@@ -105,21 +105,21 @@
   interval = [[master endDate]
                timeIntervalSinceDate: firstDate];
   if ([newOccurence isAllDay])
-    {
-      nbrDays = ((float) abs (interval) / 86400);
-      [newOccurence setAllDayWithStartDate: date
+  {
+    nbrDays = ((float) abs (interval) / 86400);
+    [newOccurence setAllDayWithStartDate: date
                                   duration: nbrDays];
-    }
+  }
   else
-    {
-      [newOccurence setStartDate: date];
-      [newOccurence setEndDate: [date addYear: 0
-                                        month: 0
-                                          day: 0
-                                         hour: 0
-                                       minute: 0
-                                       second: interval]];
-    }
+  {
+    [newOccurence setStartDate: date];
+    [newOccurence setEndDate: [date addYear: 0
+                                      month: 0
+                                        day: 0
+                                       hour: 0
+                                     minute: 0
+                                     second: interval]];
+  }
   
   return newOccurence;
 }
@@ -191,11 +191,13 @@
       iCalCalendar *iCalendarToSave;
       iCalPerson *attendee;
       SOGoUser *user;
+      WORequest *rq;
 
       iCalendarToSave = nil;
       user = [SOGoUser userWithLogin: theUID];
       attendeeObject = [self _lookupEvent: [newEvent uid] forUID: theUID];
       attendee = [newEvent userAsAttendee: user];
+      rq = [context request];
 
       // If the atttende's role is NON-PARTICIPANT, we write nothing to its calendar
       if ([[attendee role] caseInsensitiveCompare: @"NON-PARTICIPANT"] == NSOrderedSame)
@@ -217,8 +219,9 @@
 
           return;
         }
-
-      if ([newEvent recurrenceId])
+      
+      
+      if ([newEvent recurrenceId] && ![rq isICal4] && ![rq isICal])
         {
           // We must add an occurence to a non-existing event.
           if ([attendeeObject isNew])
@@ -960,13 +963,15 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
   NSArray *addedAttendees, *deletedAttendees, *updatedAttendees;
   iCalEventChanges *changes;
   NSException *ex;
+  WORequest *rq;
 
   addedAttendees = nil;
   deletedAttendees = nil;
   updatedAttendees = nil;
+  rq = [context request];
 
   changes = [newEvent getChangesRelativeToEvent: oldEvent];
-  if ([changes sequenceShouldBeIncreased])
+  if ([changes sequenceShouldBeIncreased] || [rq isICal4] || [rq isICal])
     {
       // Set new attendees status to "needs action" and recompute changes when
       // the list of attendees has changed. The list might have changed since
@@ -2211,8 +2216,10 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
       // we receive an external invitation (IMIP/ITIP) and we accept it
       // from a CUA - it gets added to a specific CalDAV calendar using a PUT
       //
-      else if ([event userIsAttendee: ownerUser] && [self _shouldScheduleEvent: [event userAsAttendee: ownerUser]])
-        {
+      else if ([event userIsAttendee: ownerUser] 
+                && [self _shouldScheduleEvent: [event userAsAttendee: ownerUser]]
+                && iCalPersonPartStatNeedsAction != [[event userAsAttendee: ownerUser] participationStatus])
+        { 
           [self sendResponseToOrganizer: event
                                    from: ownerUser];
         }
@@ -2304,7 +2311,7 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
               recurrenceId = [oldEvent recurrenceId];
             }
         }
-      
+
       // We check if the PUT call is actually an PART-STATE change
       // from one of the attendees - here's the logic :
       //
@@ -2334,24 +2341,24 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
               userIsOrganizer = [oldEvent userIsOrganizer: [context activeUser]];
             }
 
-	  // We handle the situation where the SOGo Integrator extension isn't installed or
-	  // if the SENT-BY isn't set. That can happen if Bob invites Alice by creating the event
-	  // in Annie's calendar. Annie should be the organizer, and Bob the SENT-BY. But most
-	  // broken CalDAV client that aren't identity-aware will create the event in Annie's calendar
-	  // and set Bob as the organizer. We fix this for them.  See #3368 for details.
+    // We handle the situation where the SOGo Integrator extension isn't installed or
+    // if the SENT-BY isn't set. That can happen if Bob invites Alice by creating the event
+    // in Annie's calendar. Annie should be the organizer, and Bob the SENT-BY. But most
+    // broken CalDAV client that aren't identity-aware will create the event in Annie's calendar
+    // and set Bob as the organizer. We fix this for them.  See #3368 for details.
           //
           // We also handle the case where Bob invites Alice and Bob has full access to Alice's calendar
           // After inviting ALice, Bob opens the event in Alice's calendar and accept/declines the event.
           //
-	  if (!userIsOrganizer &&
+    if (!userIsOrganizer &&
               !ownerIsOrganizer &&
-	      [[context activeUser] hasEmail: [[newEvent organizer] rfc822Email]])
-	    {
-	      [[newEvent organizer] setCn: [ownerUser cn]];
-	      [[newEvent organizer] setEmail: [[ownerUser allEmails] objectAtIndex: 0]];
-	      [[newEvent organizer] setSentBy: [NSString stringWithFormat: @"\"MAILTO:%@\"", [[[context activeUser] allEmails] objectAtIndex: 0]]];
-	      ownerIsOrganizer = YES;
-	    }
+        [[context activeUser] hasEmail: [[newEvent organizer] rfc822Email]])
+      {
+        [[newEvent organizer] setCn: [ownerUser cn]];
+        [[newEvent organizer] setEmail: [[ownerUser allEmails] objectAtIndex: 0]];
+        [[newEvent organizer] setSentBy: [NSString stringWithFormat: @"\"MAILTO:%@\"", [[[context activeUser] allEmails] objectAtIndex: 0]]];
+        ownerIsOrganizer = YES;
+      }
 
           // With Thunderbird 10, if you create a recurring event with an exception
           // occurence, and invite someone, the PUT will have the organizer in the
@@ -2362,25 +2369,25 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
 
           if (ownerIsOrganizer)
             {
-	      // We check ACLs of the 'organizer' - in case someone forges the SENT-BY
-	      NSString *uid;
+        // We check ACLs of the 'organizer' - in case someone forges the SENT-BY
+        NSString *uid;
 
-	      uid = [[oldEvent organizer] uidInContext: context];
+        uid = [[oldEvent organizer] uidInContext: context];
 
-	      if (uid && [[[context activeUser] login] caseInsensitiveCompare: uid] != NSOrderedSame)
-		{
-		  SOGoAppointmentObject *organizerObject;
+        if (uid && [[[context activeUser] login] caseInsensitiveCompare: uid] != NSOrderedSame)
+    {
+      SOGoAppointmentObject *organizerObject;
 
-		  organizerObject = [self _lookupEvent: [oldEvent uid] forUID: uid];
-		  roles = [[context activeUser] rolesForObject: organizerObject
-						     inContext: context];
+      organizerObject = [self _lookupEvent: [oldEvent uid] forUID: uid];
+      roles = [[context activeUser] rolesForObject: organizerObject
+                inContext: context];
 
-		  if (![roles containsObject: @"ComponentModifier"] && ![[context activeUser] isSuperUser])
-		    {
-		      return [self exceptionWithHTTPStatus: 409
+      if (![roles containsObject: @"ComponentModifier"] && ![[context activeUser] isSuperUser])
+        {
+          return [self exceptionWithHTTPStatus: 409
                                                     reason: @"Not allowed to perform this action. Wrong SENT-BY being used regarding access rights on organizer's calendar."];
-		    }
-		}
+        }
+    }
 
               // A RECCURENCE-ID was removed
               if (!newEvent && oldEvent)
@@ -2431,9 +2438,10 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
               
               // We first check of the sequences are alright. We don't accept attendees
               // accepting "old" invitations. If that's the case, we return a 409
-              if ([[newEvent sequence] intValue] < [[oldEvent sequence] intValue])
-                return [self exceptionWithHTTPStatus: 409
+              if ([[newEvent sequence] intValue] < [[oldEvent sequence] intValue]) {
+                return [self exceptionWithHTTPStatus: 403
                                               reason: @"sequences don't match"];
+              }
               
               // Remove the RSVP attribute, as an action from the attendee
               // was actually performed, and this confuses iCal (bug #1850)
@@ -2457,14 +2465,14 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
               if ([[changes updatedProperties] containsObject: @"exdate"])
                 {
                   [self changeParticipationStatus: @"DECLINED"
-                                     withDelegate: nil // FIXME (specify delegate?)
+                                    withDelegate: nil // FIXME (specify delegate?)
                                             alarm: nil
                                   forRecurrenceId: [self _addedExDate: oldEvent  newEvent: newEvent]];
                 }
               else if (attendee)
                 {
                   [self changeParticipationStatus: [attendee partStat]
-                                     withDelegate: delegate
+                                    withDelegate: delegate
                                             alarm: nil
                                   forRecurrenceId: recurrenceId];
                 }
@@ -2476,7 +2484,7 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
               else
                 {
                   [self _handleRemovedUsers: [changes deletedAttendees]
-                           withRecurrenceId: recurrenceId];
+                          withRecurrenceId: recurrenceId];
                 }
             }  
         } // if ([[newEvent attendees] count] || [[oldEvent attendees] count])
@@ -2485,9 +2493,9 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
           changes = [iCalEventChanges changesFromEvent: oldEvent  toEvent: newEvent];
           if ([changes hasMajorChanges])
             [self sendReceiptEmailForObject: newEvent
-                             addedAttendees: nil
-                           deletedAttendees: nil
-                           updatedAttendees: nil
+                            addedAttendees: nil
+                          deletedAttendees: nil
+                          updatedAttendees: nil
                                   operation: EventUpdated];
         }
     }  // else of if (isNew) ...
@@ -2496,9 +2504,11 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
   // We must NOT invoke [super PUTAction:] here as it'll resave
   // the content string and we could have etag mismatches.
   baseVersion = (isNew ? 0 : version);
-      
+    
   ex = [self saveComponent: calendar
-               baseVersion: baseVersion];
+          baseVersion: baseVersion];
+    
+      
       
   return ex;
 }
@@ -2604,6 +2614,8 @@ inRecurrenceExceptionsForEvent: (iCalEvent *) theEvent
       ex = [self matchesRequestConditionInContext: context];
       if (ex)
         return ex;
+
+
     }
 
   if (mustUpdate)

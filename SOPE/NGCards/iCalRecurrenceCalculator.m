@@ -110,7 +110,7 @@ static Class yearlyCalcClass  = Nil;
 
 /* complex calculation convenience */
 
-+ (void)    _fillRanges: (NSMutableArray *) ranges
++ (void)  _fillRanges: (NSMutableArray *) ranges
               fromRules: (NSArray *) rrules
 	    withinRange: (NGCalendarDateRange *) limits
        startingWithDate: (NGCalendarDateRange *) first
@@ -121,17 +121,14 @@ static Class yearlyCalcClass  = Nil;
 
   rules = [rrules objectEnumerator];
   while ((currentRule = [rules nextObject]))
-    {
-      if ([currentRule isKindOfClass: NSStringClass])
-	currentRule =
-	  [iCalRecurrenceRule
-	    recurrenceRuleWithICalRepresentation: (NSString *) currentRule];
+  {
+    if ([currentRule isKindOfClass: NSStringClass])
+	    currentRule = [iCalRecurrenceRule recurrenceRuleWithICalRepresentation: (NSString *) currentRule];
 
-      calc = [self recurrenceCalculatorForRecurrenceRule: currentRule
-		   withFirstInstanceCalendarDateRange: first];
-      [ranges addObjectsFromArray:
-		[calc recurrenceRangesWithinCalendarDateRange: limits]];
-    }
+    calc = [self recurrenceCalculatorForRecurrenceRule: currentRule
+		                withFirstInstanceCalendarDateRange: first];
+    [ranges addObjectsFromArray: [calc recurrenceRangesWithinCalendarDateRange: limits]];
+  }
 }
 
 + (void)    _fillRanges: (NSMutableArray *) ranges
@@ -235,27 +232,25 @@ static Class yearlyCalcClass  = Nil;
 
   dates = [[self _dates: exdates withinRange: limits  startingWithDate: first] objectEnumerator];
   while ((currentDate = [dates nextObject]))
-    {
-      maxRanges = [ranges count];
-      for (count = maxRanges; count > 0; count--)
-	{
-	  currentRange = [ranges objectAtIndex: count - 1];
-          compare = [[currentRange startDate] compare: currentDate];
-          if ((compare == NSOrderedAscending || compare == NSOrderedSame) &&
-              [[currentRange endDate] compare: currentDate] == NSOrderedDescending)
-            {
-              [ranges removeObjectAtIndex: count - 1];
-            }
-	}
-    }
+  {
+    maxRanges = [ranges count];
+    for (count = maxRanges; count > 0; count--)
+	  {
+	    currentRange = [ranges objectAtIndex: count - 1];
+      compare = [[currentRange startDate] compare: currentDate];
+      if ( compare == NSOrderedSame)
+      {
+        [ranges removeObjectAtIndex: count - 1];
+      }
+	  }
+  }
 }
 
-+ (NSArray *)
- recurrenceRangesWithinCalendarDateRange: (NGCalendarDateRange *) _r
++ (NSArray *) recurrenceRangesWithinCalendarDateRange: (NGCalendarDateRange *) _r
 	  firstInstanceCalendarDateRange: (NGCalendarDateRange *) _fir
 			 recurrenceRules: (NSArray *) _rRules
 			  exceptionRules: (NSArray *) _exRules
-                         recurrenceDates: (NSArray *) _rDates
+        recurrenceDates: (NSArray *) _rDates
 			  exceptionDates: (NSArray *) _exDates
 {
   NSMutableArray *ranges;
@@ -264,14 +259,10 @@ static Class yearlyCalcClass  = Nil;
 
   if ([_rRules count] > 0 || [_rDates count] > 0)
     {
-      [self _fillRanges: ranges fromRules: _rRules
-	    withinRange: _r startingWithDate: _fir];
-      [self _fillRanges: ranges fromDates: _rDates
-	    withinRange: _r startingWithDate: _fir];
-      [self _removeExceptionsFromRanges: ranges withRules: _exRules
-	    withinRange: _r startingWithDate: _fir];
-      [self _removeExceptionDatesFromRanges: ranges withDates: _exDates
-	    withinRange: _r startingWithDate: _fir];
+      [self _fillRanges: ranges fromRules: _rRules withinRange: _r startingWithDate: _fir];
+      [self _fillRanges: ranges fromDates: _rDates withinRange: _r startingWithDate: _fir];
+      [self _removeExceptionsFromRanges: ranges withRules: _exRules withinRange: _r startingWithDate: _fir];
+      [self _removeExceptionDatesFromRanges: ranges withDates: _exDates withinRange: _r startingWithDate: _fir];
     }
 
   return ranges;

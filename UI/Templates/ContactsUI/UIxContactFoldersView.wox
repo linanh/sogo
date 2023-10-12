@@ -117,6 +117,12 @@
                       </md-button>
                     </md-menu-item>
                   </var:if>
+                  <md-menu-divider><!-- divider --></md-menu-divider>
+                  <md-menu-item>
+                    <md-button ng-click="folder.downloadProvisioningProfile()">
+                       <var:string label:value="Download configuration profile"/>
+                    </md-button>
+                  </md-menu-item>
                 </md-menu-content>
               </md-menu>
             </md-list-item>
@@ -250,8 +256,8 @@
             <a href="#" class="sg-folder-name"
                ng-click="addressbook.searchMode($event)">{{addressbook.selectedFolder.name}}</a>
             <md-menu>
-              <md-button class="sg-icon-button" label:aria-label="Sort"
-                         ng-click="$mdMenu.open()">
+              <md-button class="sg-icon-button" label:aria-label="Sort" ng-click="$mdMenu.open()">
+                <md-tooltip md-direction="bottom"><var:string label:value="Sort"/></md-tooltip>
                 <md-icon>sort</md-icon>
               </md-button>
               <md-menu-content>
@@ -300,7 +306,8 @@
                 </md-menu-item>
               </md-menu-content>
             </md-menu>
-            <md-button class="sg-icon-button" aria-label="Refresh" ng-click="addressbook.selectedFolder.$reload()" >
+            <md-button class="sg-icon-button" aria-label="Refresh" ng-click="addressbook.selectedFolder.$reload()">
+              <md-tooltip md-direction="bottom"><var:string label:value="Refresh"/></md-tooltip>
               <md-icon>refresh</md-icon>
             </md-button>
           </div>

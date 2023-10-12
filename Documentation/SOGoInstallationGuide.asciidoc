@@ -164,7 +164,7 @@ The following operating systems are currently supported by SOGo:
 
 * Red Hat Enterprise Linux (RHEL) Server 7, 8 and 9
 * Community ENTerprise Operating System (CentOS) 7, 8 and 9
-* Debian GNU/Linux 7.0 (Wheezy), 8.0 (Jessie), 9.0 (Stretch) and 10.0 (Buster)
+* Debian GNU/Linux 7.0 (Wheezy), 8.0 (Jessie), 9.0 (Stretch), 10 (Buster), 11 (Bullseye) and 12 (Bookworm)
 * Ubuntu 14.04 (Trusty), 16.04 (Xenial), 18.04 (Bionic), 20.04 (Focal) and 22.04 (Jammy)
 
 Make sure the required components are started automatically at boot time
@@ -817,7 +817,7 @@ specified as an array of dictionaries.
 |JWT secret according to RFC-7519. Default value is `SOGo`.
 
 |D |SOGoCreateIdentitiesDisabled
-|Disable identity creation for users in preferences. If `YES`, users won't be able to add new identities and will allow to change only full name, signature and default identity. Default value is `NO`.
+|Disable identity creation for users in preferences. If `YES`, users won't be able to add new identities and will allow to change only full name, signature and default identity. Default value is `NO`. Note : If this settings is set to `YES`, it will not be possible to crete auxiliary mail accounts.
 
 
 
@@ -1263,9 +1263,9 @@ mapping = {
 
 |===
 2+h|Name
-|First |givenName
+|First |givenname
 |Last |sn
-|DisplayName |displayName _or_ cn _or_ givenName + sn
+|DisplayName |displayname _or_ cn _or_ givenname + sn
 |Nickname |mozillanickname
 
 2+h|Internet
@@ -1274,7 +1274,7 @@ mapping = {
 |ScreenName |nsaimid
 
 2+h|Phones
-|Work |telephoneNumber
+|Work |telephonenumber
 |Home |homephone
 |Mobile |mobile
 |Fax |facsimiletelephonenumber
@@ -1295,7 +1295,7 @@ mapping = {
 |Address |street + mozillaworkstreet2
 |City |l
 |State/Province |st
-|Zip/Postal code |postalCode
+|Zip/Postal code |postalcode
 |Country |c
 |Web page |mozillaworkurl
 
@@ -2285,6 +2285,13 @@ SOGoForwardConstraintsDomains = ("gmail.com", "googlemail.com");
 will allow users to forward emails to only `gmail.com` and `googlemail.com` domains.
 When empty or undefined, no constraints are imposed.
 
+|D |SOGoNotificationEnabled
+|Parameter used to activate the edition from the preferences window of
+notifications for emails. Requires Sieve script support on the IMAP
+host.
+
+Defaults to `NO` when unset.
+
 |D |SOGoSieveScriptsEnabled
 |Parameter used to activate the edition from the preferences windows of
 server-side mail filters. Requires Sieve script support on the IMAP
@@ -2514,6 +2521,21 @@ Possible values are:
 * `below`
 
 Defaults to `below`.
+
+|U |SOGoMailUseSignatureOnNew
+|Add signature to new message
+
+Defaults to `YES`.
+
+|U |SOGoMailUseSignatureOnReply
+|Add signature to reply
+
+Defaults to `YES`.
+
+|U |SOGoMailUseSignatureOnForward
+|Add signature to forward
+
+Defaults to `YES`.
 
 |U |SOGoMailComposeMessageType
 |The message composition format. Possible values are:
@@ -2838,6 +2860,21 @@ The _cronjob_ should look like this:
 
 ----
 0 0 * * * sogo /usr/sbin/sogo-tool update-autoreply -p /etc/sogo/sieve.creds
+----
+
+_Password_ — Force user password change at login
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following commands force user to change his password at login :
+
+----
+/usr/sbin/sogo-tool user-preferences set settings [USER] ForceResetPassword 1
+----
+
+Disable :
+
+----
+/usr/sbin/sogo-tool user-preferences unset settings [USER] ForceResetPassword
 ----
 
 Managing User Accounts
@@ -3267,6 +3304,11 @@ current version of SOGo from the previous release.
 
 [cols="100a"]
 |=======================================================================
+
+h|5.9.0
+|Run the shell script `sql-update-5.8.4_to_5.9.0.sh` (if you are using MySQL). This will change the `c_defaults` to `MEDIUMTEXT`.
+
+For mac Apple's Calendar users who re-create their calendar in 5.8.2, the account must be removed and re-added (https://bugs.sogo.nu/view.php?id=5639#c16901). This can be achived in  `` / `System Settings` / `Internet Accounts`.
 
 h|5.8.2
 |Changes in Mac OS X Ventura 13.3. For mac Apple's Calendar users, the account must be removed and re-added (https://bugs.sogo.nu/view.php?id=5639#c16901). This can be achived in  `` / `System Settings` / `Internet Accounts`.

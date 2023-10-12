@@ -136,11 +136,18 @@ static NSArray *reminderValues = nil;
             vacationOptions = [NSMutableDictionary new];
 	}
 
-      if ([dd forwardEnabled])
+  if ([dd forwardEnabled])
 	{
 	  forwardOptions = [[userDefaults forwardOptions] mutableCopy];
 	  if (!forwardOptions)
             forwardOptions = [NSMutableDictionary new];
+	}
+
+  if ([dd notificationEnabled])
+	{
+	  notificationOptions = [[userDefaults notificationOptions] mutableCopy];
+	  if (!notificationOptions)
+            notificationOptions = [NSMutableDictionary new];
 	}
 
       mailCustomFromEnabled = [dd mailCustomFromEnabled];
@@ -160,6 +167,7 @@ static NSArray *reminderValues = nil;
   [sieveFilters release];
   [vacationOptions release];
   [forwardOptions release];
+  [notificationOptions release];
   [daysOfWeek release];
   [addressBooksIDWithDisplayName release];
   [client release];
@@ -989,6 +997,15 @@ static NSArray *reminderValues = nil;
   return [domains jsonRepresentation];
 }
 
+/* mail notifications */
+//
+// Used by templates
+//
+- (BOOL) isNotificationEnabled
+{
+  return [[user domainDefaults] notificationEnabled];
+}
+
 //
 // Used by templates
 //
@@ -1129,12 +1146,13 @@ static NSArray *reminderValues = nil;
            userCanChangePassword];
 }
 
+
 //
 // Used by wox template
 //
 - (NSArray *) languages
 {
-  return [[SOGoSystemDefaults sharedSystemDefaults] supportedLanguages];
+  return [[[SOGoSystemDefaults sharedSystemDefaults] supportedLanguages] sortedArrayUsingFunction: languageSort context: self];
 }
 
 //
@@ -1392,10 +1410,14 @@ static NSArray *reminderValues = nil;
             for (identity in previousIdentities) {
               if ([newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]]) {
                   [identity setObject: [[newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] objectForKey:@"fullName"] forKey: @"fullName"];
-                  if ([identity objectForKey:@"signature"]) {
+                  if (newIdentitiesAsDict 
+                      && [newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] 
+                      && [[newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] objectForKey:@"signature"]) {
                     [identity setObject: [[newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] objectForKey:@"signature"] forKey: @"signature"];
                   }
-                  if ([[newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] objectForKey:@"isDefault"]) {
+                  if (newIdentitiesAsDict 
+                      && [newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] 
+                      && [[newIdentitiesAsDict objectForKey: [identity objectForKey:@"email"]] objectForKey:@"isDefault"]) {
                     [identity setObject: [NSNumber numberWithBool: YES] forKey: @"isDefault"];
                   } else {
                     [identity setObject: [NSNumber numberWithBool: NO] forKey: @"isDefault"];
@@ -1726,7 +1748,8 @@ static NSArray *reminderValues = nil;
           dd = [[context activeUser] domainDefaults];
 
           // We check if the Sieve server is available *ONLY* if at least one of the option is enabled
-          if (!([dd sieveScriptsEnabled] || [dd vacationEnabled] || [dd forwardEnabled]) || [self _isSieveServerAvailable])
+          if (!([dd sieveScriptsEnabled] || [dd vacationEnabled] || [dd forwardEnabled] || [dd notificationEnabled]) 
+                  || [self _isSieveServerAvailable])
             {
               BOOL forceActivation = ![[v objectForKey: @"hasActiveExternalSieveScripts"] boolValue];
 
@@ -1743,6 +1766,9 @@ static NSArray *reminderValues = nil;
           else
             results = (id <WOActionResults>) [self responseWithStatus: 503
                          andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Service temporarily unavailable", @"message", nil]];
+        } else {
+          results = (id <WOActionResults>) [self responseWithStatus: 500
+                         andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Error during the validation", @"message", nil]];
         }
     }
 
@@ -1805,6 +1831,14 @@ static NSArray *reminderValues = nil;
 - (BOOL) isEasUIEnabled
 {
   return ![[SOGoSystemDefaults sharedSystemDefaults] isEasUIDisabled];
+}
+
+- (BOOL) showCreateIdentity
+{
+  SOGoDomainDefaults *dd;
+  dd = [[context activeUser] domainDefaults];
+
+  return ![dd createIdentitiesDisabled];
 }
 
 @end

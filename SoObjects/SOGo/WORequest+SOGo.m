@@ -242,7 +242,7 @@
   return ([[cc userAgent] rangeOfString: @"Android"].location != NSNotFound);
 }
 
-- (BOOL) isMacOSXVenturaCalendarApp
+- (BOOL) isMacOSXCalendar
 {
   WEClientCapabilities *cc;
   BOOL b;
@@ -251,12 +251,20 @@
 
   b = (
         (
-          nil != [cc userAgent] && [[cc userAgent] rangeOfString: @"macOS/13"].location != NSNotFound
+          nil != [cc userAgent] 
+          && [[cc userAgent] rangeOfString: @"macOS"].location != NSNotFound
           && [[cc userAgent] rangeOfString: @"dataaccessd"].location != NSNotFound
         )
        );
 
   return b;
+}
+
+- (BOOL) isThunderbird
+{
+  BOOL ret;
+  ret = ([[self headerForKey:@"user-agent"] rangeOfString: @"Thunderbird"].location != NSNotFound);
+  return ret;
 }
 
 @end

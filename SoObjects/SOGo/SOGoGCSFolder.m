@@ -150,7 +150,7 @@ static NSArray *childRecordFields = nil;
   if ([pathElements count] > 1)
     ocsName = [pathElements objectAtIndex: 1];
   else
-    ocsName = [[context request] isMacOSXVenturaCalendarApp] ? @"Personal" : @"personal";
+    ocsName = @"personal";
 
   path = [NSString stringWithFormat: @"/Users/%@/%@/%@",
 		   login, [pathElements objectAtIndex: 0], ocsName];
@@ -400,14 +400,7 @@ static NSArray *childRecordFields = nil;
 }
 
 - (void) setOCSPath: (NSString *) _path
-{
-  // FIXME: Improve MacOSX Ventura support 
-  // Check if the problem will be fixed by Apple or if this fix should be kept in the future
-  // Ticket #5639
-  if ([[context request] isMacOSXVenturaCalendarApp]) {
-    _path = [_path stringByReplacingOccurrencesOfString:@"/PERSONAL" withString:@"/personal"];
-  }
-  
+{  
   if (![ocsPath isEqualToString:_path])
     {
       if (ocsPath)
@@ -438,12 +431,6 @@ static NSArray *childRecordFields = nil;
 
   cache = [SOGoCache sharedCache];
   record = [[cache valueForKey: _path] objectFromJSONString];
-  // FIXME: Improve MacOSX Ventura support 
-  // Check if the problem will be fixed by Apple or if this fix should be kept in the future
-  // Ticket #5639
-  if ([[context request] isMacOSXVenturaCalendarApp]) {
-    _path = [_path stringByReplacingOccurrencesOfString:@"PERSONAL" withString:@"personal"];
-  }
 
   // We check if we got a cache miss or a potentially bogus
   // entry from the cache
@@ -470,13 +457,6 @@ static NSArray *childRecordFields = nil;
   NSString *realNameInContainer;
 
   realNameInContainer = [self realNameInContainer];
-
-  // FIXME: Improve MacOSX Ventura support 
-  // Check if the problem will be fixed by Apple or if this fix should be kept in the future
-  // Ticket #5639
-  if ([[context request] isMacOSXVenturaCalendarApp]) {
-    realNameInContainer = [realNameInContainer stringByReplacingOccurrencesOfString:@"PERSONAL" withString:@"personal"];
-  }
 
   return [NSString stringWithFormat: @"%@:%@/%@",
 		   owner,
@@ -729,7 +709,7 @@ static NSArray *childRecordFields = nil;
 {
   NSArray *records, *names;
   NSString *sqlFilter, *compFilter;
-  EOQualifier *aclQualifier, *componentQualifier, *qualifier;
+  EOQualifier *aclQualifier, *componentQualifier, *qualifier, *vlistExclusionQualifier;
 
   sqlFilter = [self aclSQLListingFilter];
   if (sqlFilter)
@@ -758,8 +738,18 @@ static NSArray *childRecordFields = nil;
       else
         qualifier = aclQualifier;
 
+      // For Thunderbird, disable contact list
+      if ([[context request] isThunderbird]) {
+        vlistExclusionQualifier = [EOQualifier qualifierWithQualifierFormat: @"c_component != 'vlist'"];
+        qualifier = [[[EOAndQualifier alloc] initWithQualifiers:
+                                                    vlistExclusionQualifier,
+                                                    qualifier,
+                                                    nil] autorelease];
+      }
+
       records = [[self ocsFolder] fetchFields: childRecordFields
                             matchingQualifier: qualifier];
+      
       if (![records isNotNull])
         {
           [self errorWithFormat: @"(%s): fetch failed!", __PRETTY_FUNCTION__];
@@ -1196,8 +1186,18 @@ static NSArray *childRecordFields = nil;
 {
   GCSFolder *folder;
   EOFetchSpecification *fetchSpec;
+  EOQualifier *vlistExclusionQualifier;
 
   folder = [self ocsFolder];
+
+  // For Thunderbird, disable contact list
+  if ([[context request] isThunderbird]) {
+    vlistExclusionQualifier = [EOQualifier qualifierWithQualifierFormat: @"c_component != 'vlist'"];
+    qualifier = [[[EOAndQualifier alloc] initWithQualifiers:
+                                                vlistExclusionQualifier,
+                                                qualifier,
+                                                nil] autorelease];
+  }
 
   if (qualifier)
     fetchSpec = [EOFetchSpecification

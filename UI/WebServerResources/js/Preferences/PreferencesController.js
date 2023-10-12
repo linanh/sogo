@@ -7,8 +7,8 @@
   /**
    * @ngInject
    */
-  PreferencesController.$inject = ['$q', '$window', '$state', '$mdMedia', '$mdSidenav', '$mdDialog', '$mdToast', 'sgSettings', 'sgFocus', 'Dialog', 'User', 'Account', 'Preferences', 'Authentication'];
-  function PreferencesController($q, $window, $state, $mdMedia, $mdSidenav, $mdDialog, $mdToast, sgSettings, focus, Dialog, User, Account, Preferences, Authentication) {
+  PreferencesController.$inject = ['$q', '$window', '$state', '$mdMedia', '$mdSidenav', '$mdDialog', '$mdToast', 'sgSettings', 'sgFocus', 'Dialog', 'User', 'Account', 'Preferences', 'Authentication', 'AddressBook'];
+  function PreferencesController($q, $window, $state, $mdMedia, $mdSidenav, $mdDialog, $mdToast, sgSettings, focus, Dialog, User, Account, Preferences, Authentication, AddressBook) {
     var vm = this, mailboxes = [], today = new Date().beginOfDay();
 
     this.$onInit = function() {
@@ -17,8 +17,14 @@
       this.timeZonesList = $window.timeZonesList;
       this.timeZonesSearchText = '';
       this.addressesSearchText = '';
+      this.autocomplete = {forward: [], notification: []};
       this.mailLabelKeyRE = new RegExp(/^(?!^_\$)[^(){} %*\"\\\\]*?$/);
       this.emailSeparatorKeys = Preferences.defaults.emailSeparatorKeys;
+      if(this.preferences.defaults.Notification) {
+        if (!this.preferences.defaults.Notification.notificationMessage)
+          this.preferences.defaults.Notification.notificationMessage = l('Notification Message', $window.defaultEmailAddresses);
+        this.preferences.defaults.Notification.notificationTranslated = l('Notification');
+      }
       if (Preferences.defaults.SOGoMailAutoMarkAsReadMode == 'delay')
         this.mailAutoMarkAsReadDelay = Math.max(1, this.preferences.defaults.SOGoMailAutoMarkAsReadDelay);
       else
@@ -144,7 +150,8 @@
           defaults: this.preferences.defaults,
           account: account,
           accountId: index,
-          mailCustomFromEnabled: $window.mailCustomFromEnabled
+          mailCustomFromEnabled: $window.mailCustomFromEnabled,
+          maxSize: this.preferences.defaults.CDefaultsSize
         }
       }).then(function() {
         // Automatically expand the new mail account
@@ -172,7 +179,8 @@
           defaults: this.preferences.defaults,
           account: account,
           accountId: index,
-          mailCustomFromEnabled: $window.mailCustomFromEnabled
+          mailCustomFromEnabled: $window.mailCustomFromEnabled,
+          maxSize: this.preferences.defaults.CDefaultsSize
         }
       }).then(function() {
         vm.preferences.defaults.AuxiliaryMailAccounts[index] = account.$omit();
@@ -412,6 +420,20 @@
         }
       }
 
+      // We check if we're allowed or not to notify based on the domain defaults
+      if (this.preferences.defaults.Notification && this.preferences.defaults.Notification.enabled &&
+        this.preferences.defaults.Notification.notificationAddress) {
+      addresses = this.preferences.defaults.Notification.notificationAddress;
+      try {
+        for (i = 0; i < addresses.length; i++) {
+          validateForwardAddress(addresses[i]);
+        }
+      } catch (err) {
+        Dialog.alert(l('Error'), err);
+        sendForm = false;
+      }
+    }
+
       // IMAP labels must be unique
       if (this.preferences.defaults.SOGoMailLabelsColorsKeys.length !=
           this.preferences.defaults.SOGoMailLabelsColorsValues.length ||
@@ -615,6 +637,107 @@
         }
       }
     };
+
+    this.contactFilter = function ($query) {
+      return AddressBook.$filterAll($query, [], {priority: 'gcs'}).then(function(cards) {
+        // Divide the matching cards by email addresses so the user can select
+        // the recipient address of her choice
+        var explodedCards = [];
+        _.forEach(_.invokeMap(cards, 'explode'), function(manyCards) {
+          _.forEach(manyCards, function(card) {
+            explodedCards.push(card);
+          });
+        });
+        // Remove duplicates
+        return _.uniqBy(explodedCards, function(card) {
+          return card.$$fullname + ' ' + card.$$email + ' ' + card.containername;
+        });
+      });
+    };
+
+    this.ignoreReturn = function ($event) {
+      if ($event.keyCode == 13) {
+        $event.stopPropagation();
+        $event.preventDefault();
+        return false;
+      }
+      if ($event.keyCode == 186 && $event.key == 'ü') { //Key code for separator ';' but is keycode for ü in german keyboard
+        $event.stopPropagation();
+        $event.preventDefault();
+        let element = $window.document.getElementById($event.target.id);
+        element.value = element.value + 'ü'
+      }
+    };
+
+    this.addRecipient = function (contact, element) {
+      var recipients, recipient, list, i, address;
+
+      recipients = this.autocomplete[element];
+
+      if (angular.isString(contact)) {
+        // Examples that are handled:
+        //   Smith, John <john@smith.com>
+        //   <john@appleseed.com>;<foo@bar.com>
+        //   foo@bar.com abc@xyz.com
+        address = '';
+        for (i = 0; i < contact.length; i++) {
+          if ((contact.charCodeAt(i) ==  9 ||   // tab
+               contact.charCodeAt(i) == 32 ||   // space
+               contact.charCodeAt(i) == 44 ||   // ,
+               contact.charCodeAt(i) == 59) &&  // ;
+              address.isValidEmail() &&
+              recipients.indexOf(address) < 0) {
+            recipients.push(address);
+            address = '';
+          }
+          else {
+            address += contact.charAt(i);
+          }
+        }
+        if (address && recipients.indexOf(address) < 0)
+          recipients.push(address);
+
+        return address;
+      }
+
+      if (contact.$isList({expandable: true})) {
+        // If the list's members were already fetch, use them
+        if (angular.isDefined(contact.refs) && contact.refs.length) {
+          _.forEach(contact.refs, function(ref) {
+            if (ref.email.length && recipients.indexOf(ref.$shortFormat()) < 0)
+              recipients.push(ref.$shortFormat());
+          });
+        }
+        else {
+          list = Card.$find(contact.container, contact.c_name);
+          list.$id().then(function(listId) {
+            _.forEach(list.refs, function(ref) {
+              if (ref.email.length && recipients.indexOf(ref.$shortFormat()) < 0)
+                recipients.push(ref.$shortFormat());
+            });
+          });
+        }
+      }
+      else if (contact.$isGroup({expandable: true})) {
+        recipient = {
+          toString: function () { return contact.$shortFormat(); },
+          isExpandable: true,
+          members: []
+        };
+        contact.$members().then(function (members) {
+          recipient.members = members;
+        });
+      }
+      else {
+        recipient = contact.$$email;
+      }
+      
+      if (recipient)
+        return recipient;
+      else
+        return null;
+    };
+
   }
 
   angular

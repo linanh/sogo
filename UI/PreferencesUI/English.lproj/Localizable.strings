@@ -24,6 +24,7 @@
 "Vacation" = "Vacation";
 "Forward" = "Forward";
 "Password" = "Password";
+"Notification" = "Notification";
 "Categories" = "Categories";
 "Appointments invitations" = "Appointments invitations";
 "Name" = "Name";
@@ -79,6 +80,11 @@
 "You are not allowed to forward your messages to an external email address." = "You are not allowed to forward your messages to an external email address.";
 "You are not allowed to forward your messages to an internal email address." = "You are not allowed to forward your messages to an internal email address.";
 "You are not allowed to forward your messages to this domain:" = "You are not allowed to forward your messages to this domain:";
+
+/* notification */
+"Notify incoming messsages" = "Notify incoming messsages";
+"Notification Message Sent" = "Notification message sent";
+"Notification Message" = "Notification of new message on %{0}";
 
 /* d & t */
 "Time Zone" = "Time Zone";
@@ -195,6 +201,9 @@
 "Compose messages in" = "Compose messages in";
 "composemessagestype_html" = "HTML";
 "composemessagestype_text" = "Plain text";
+"Insert signature on new message" = "Insert signature on new message";
+"Insert signature on reply" = "Insert signature on reply";
+"Insert signature on forward" = "Insert signature on forward";
 
 /* Base font size for messages composed in HTML */
 "Default font size" = "Default font size";
@@ -248,6 +257,7 @@
 "Digitally sign the message by default" = "Digitally sign the message by default";
 "Always try to encrypt the message" = "Always try to encrypt the message";
 "An error occurred while importing the certificate. Verify your password." = "An error occurred while importing the certificate. Verify your password.";
+"Data too big. Please contact technical support." = "Data too big. Please contact technical support.";
 
 /* Additional Parameters */
 "Additional Parameters" = "Additional Parameters";
@@ -407,6 +417,7 @@
 
 "Keep the message" = "Keep the message";
 "Forward the message to" = "Forward the message to";
+"Notify the message to" = "Notify the message to";
 
 /* Input field label of "forward" mail filter action */
 "Email" = "Email";

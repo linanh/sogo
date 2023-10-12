@@ -86,6 +86,8 @@ NSString *SOGoPasswordRecoverySecondaryEmail = @"SecondaryEmail";
       [ud setObject: @"text" forKey: @"SOGoMailComposeMessageType"];
     }
 
+  [ud setObject: [NSNumber numberWithUnsignedLongLong: [up getCDefaultsSize]] forKey: @"CDefaultsSize"]; // Add c_defaults field size
+  
   return ud;
 }
 
@@ -705,6 +707,36 @@ NSString *SOGoPasswordRecoverySecondaryEmail = @"SecondaryEmail";
   return signaturePlacement;
 }
 
+- (BOOL) mailUseSignatureOnNew
+{
+  return [self boolForKey: @"SOGoMailUseSignatureOnNew"];
+}
+
+- (void) setMailUseSignatureOnNew: (BOOL) newValue
+{
+  [self setBool: newValue  forKey: @"SOGoMailUseSignatureOnNew"];
+}
+
+- (BOOL) mailUseSignatureOnReply
+{
+  return [self boolForKey: @"SOGoMailUseSignatureOnReply"];
+}
+
+- (void) setMailUseSignatureOnReply: (BOOL) newValue
+{
+  [self setBool: newValue  forKey: @"SOGoMailUseSignatureOnReply"];
+}
+
+- (BOOL) mailUseSignatureOnForward
+{
+  return [self boolForKey: @"SOGoMailUseSignatureOnForward"];
+}
+
+- (void) setMailUseSignatureOnForward: (BOOL) newValue
+{
+  [self setBool: newValue  forKey: @"SOGoMailUseSignatureOnForward"];
+}
+
 - (void) setAllowUserReceipt: (BOOL) allow
 {
   [self setBool: allow forKey: @"SOGoMailReceiptAllow"];
@@ -804,7 +836,7 @@ NSString *SOGoPasswordRecoverySecondaryEmail = @"SecondaryEmail";
 
   // Remove possible XSS injection
   mailIdentities = [NSMutableArray arrayWithArray: [self arrayForKey: @"SOGoMailIdentities"]];
-  for (i = 0 ; i < [mailIdentities length] ; i++) {
+  for (i = 0 ; i < [mailIdentities count] ; i++) {
     mailIdentity = [NSMutableDictionary dictionaryWithDictionary: [mailIdentities objectAtIndex: i]];
     if (mailIdentity && [mailIdentity objectForKey: @"fullName"]) {
       fullName = [NSString stringWithString: [mailIdentity objectForKey: @"fullName"]];
@@ -955,6 +987,16 @@ NSString *SOGoPasswordRecoverySecondaryEmail = @"SecondaryEmail";
 - (NSDictionary *) forwardOptions
 {
   return [self dictionaryForKey: @"Forward"];
+}
+
+- (void) setNotificationOptions: (NSDictionary *) newValue
+{
+  [self setObject: newValue forKey: @"Notification"];
+}
+
+- (NSDictionary *) notificationOptions
+{
+  return [self dictionaryForKey: @"Notification"];
 }
 
 - (void) setContactsCategories: (NSArray *) newValues

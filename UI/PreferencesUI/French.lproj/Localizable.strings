@@ -24,6 +24,7 @@
 "Vacation" = "Absence prolongée";
 "Forward" = "Transfert";
 "Password" = "Mot de passe";
+"Notification" = "Notification";
 "Categories" = "Catégories";
 "Appointments invitations" = "Invitations";
 "Name" = "Nom";
@@ -68,7 +69,7 @@
 = "La date de fin de la réponse automatique doit être dans le futur.";
 
 /* forward messages */
-"Forward incoming messages" = "Transférer les messages entrant";
+"Forward incoming messages" = "Transférer les messages entrants";
 "Always forward" = "Toujours transférer";
 "Incoming messages are forwarded prior to apply your filters." = "Le courrier entrant est transféré d'appliquer vos filtres.";
 "Keep a copy" = "Garder une copie";
@@ -79,6 +80,11 @@
 "You are not allowed to forward your messages to an external email address." = "Il est interdit de renvoyer vos messages vers une adresse externe.";
 "You are not allowed to forward your messages to an internal email address." = "Il est interdit de renvoyer vos messages vers une adresse interne.";
 "You are not allowed to forward your messages to this domain:" = "Vous ne pouvez pas transférer vos messages à ce domaine :";
+
+/* notification */
+"Notify incoming messsages" = "Notifier les messages entrants";
+"Notification Message Sent" = "Message de notification envoyé";
+"Notification Message" = "Nouveau message reçu sur %{0}";
 
 /* d & t */
 "Time Zone" = "Fuseau horaire";
@@ -195,6 +201,9 @@
 "Compose messages in" = "Composer les messages en";
 "composemessagestype_html" = "HTML";
 "composemessagestype_text" = "Texte";
+"Insert signature on new message" = "Insérer la signature sur un nouveau message";
+"Insert signature on reply" = "Insérer la signature sur une réponse";
+"Insert signature on forward" = "Insérer la signature sur un transfert";
 
 /* Base font size for messages composed in HTML */
 "Default font size" = "Taille de la police par défaut";
@@ -248,6 +257,7 @@
 "Digitally sign the message by default" = "Toujours signer le message";
 "Always try to encrypt the message" = "Toujours tenter de crypter le message";
 "An error occurred while importing the certificate. Verify your password." = "Une erreur est survenue lors de l'importation du certificat. Veuillez vérifier votre mot de passe.";
+"Data too big. Please contact technical support." = "Données trop longues. Contactez votre support technique.";
 
 /* Additional Parameters */
 "Additional Parameters" = "Paramètres supplémentaires";
@@ -407,6 +417,7 @@
 
 "Keep the message" = "Conserver le message";
 "Forward the message to" = "Faire suivre le message à";
+"Notify the message to" = "Notifier le message à";
 
 /* Input field label of "forward" mail filter action */
 "Email" = "Email";
