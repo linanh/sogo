@@ -1,6 +1,8 @@
-/* SOGoMobileProvision.h - this file is part of SOGo
+/* NGMimeFileData+SOGo.m - this file is part of SOGo
  *
  * Copyright (C) 2023 Alinto
+ *
+ * Author: Sébastien Mizrahi <smizrahi@alinto.eu>
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,28 +20,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef SOGOMOBILEPROVISION_H
-#define SOGOMOBILEPROVISION_H
+#import "NGMimeFileData+SOGo.h"
 
-#include <SOGo/SOGoObject.h>
 
-@class SOGoMobileProvision;
-@class NSString;
+@implementation NGMimeFileData (SOGoExtensions)
 
-typedef enum
-{
-    ProvisioningTypeCalendar = 0,
-    ProvisioningTypeContact = 1
-} ProvisioningType;
-
-@interface SOGoMobileProvision : SOGoObject
-{
-  
+- (NSString *) path {
+  return path;
 }
 
-+ (NSString *)plistForCalendarsWithContext:(WOContext *)context andPath:(NSString *)path andName:(NSString *)name;
-+ (NSString *)plistForContactsWithContext:(WOContext *)context andPath:(NSString *)path andName:(NSString *)name;
-
 @end
-
-#endif /* SOGOMOBILEPROVISION_H */

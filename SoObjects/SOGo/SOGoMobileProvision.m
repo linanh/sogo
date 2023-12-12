@@ -23,10 +23,11 @@
 
 #import "SOGoMobileProvision.h"
 #import "SOGoUser.h"
+#import "NSString+Crypto.h"
 
 @implementation SOGoMobileProvision
 
-+ (NSString *)_plistWithContext:(WOContext *)context andPath:(NSString *)path andType:(ProvisioningType) provisioningType
++ (NSString *)_plistWithContext:(WOContext *)context andPath:(NSString *)path andType:(ProvisioningType) provisioningType andName:(NSString *)name
 {
   NSData *plistData;
   SOGoUser *activeUser;
@@ -34,6 +35,7 @@
   NSDictionary *provisioning;
   NSError *error;
   NSString *payloadType, *prefix, *type;
+  NSNumber *port;
 
   activeUser = [context activeUser];
   serverURL = [context serverURL];
@@ -56,25 +58,34 @@
     break;
   }
 
+  port = [serverURL port];
+  if (!port) {
+    if ([[serverURL scheme] isEqualToString:@"https"]) {
+      port = [NSNumber numberWithInt: 443];
+    } else {
+      port = [NSNumber numberWithInt: 80];
+    }
+  }
+
   provisioning = [NSDictionary dictionaryWithObjectsAndKeys:
                                               [NSArray arrayWithObject: [NSDictionary dictionaryWithObjectsAndKeys:
-                                              [NSString stringWithFormat:@"%@ %@", type, [activeUser login]], [NSString stringWithFormat:@"%@%@", prefix, @"AccountDescription"],
+                                              [NSString stringWithFormat:@"%@ %@", type, name], [NSString stringWithFormat:@"%@%@", prefix, @"AccountDescription"],
                                               [serverURL host], [NSString stringWithFormat:@"%@%@", prefix, @"HostName"],
-                                              [serverURL port], [NSString stringWithFormat:@"%@%@", prefix, @"Port"],
+                                              port, [NSString stringWithFormat:@"%@%@", prefix, @"Port"],
                                               path, [NSString stringWithFormat:@"%@%@", prefix, @"PrincipalURL"],
                                               [NSNumber numberWithBool:[[serverURL scheme] isEqualToString:@"https"]], [NSString stringWithFormat:@"%@%@", prefix, @"UseSSL"],
                                               [activeUser login], [NSString stringWithFormat:@"%@%@", prefix, @"Username"],
                                               [NSString stringWithFormat: @"SOGo %@ provisioning", prefix], @"PayloadDescription",
-                                              [NSString stringWithFormat:@"%@ %@", type,  [activeUser login]], @"PayloadDisplayName",
-                                              [NSString stringWithFormat:@"%@.apple.%@", [serverURL host], [prefix lowercaseString]], @"PayloadIdentifier",
+                                              [NSString stringWithFormat:@"%@ %@", type,  name], @"PayloadDisplayName",
+                                              [NSString stringWithFormat:@"%@.%@.apple.%@", [serverURL host], [name asMD5String], [prefix lowercaseString]], @"PayloadIdentifier",
                                               [serverURL host], @"PayloadOrganization",
                                               payloadType, @"PayloadType",
                                               [SOGoObject globallyUniqueObjectId], @"PayloadUUID",
                                               [NSNumber numberWithInt: 1], @"PayloadVersion",
                                               nil]], @"PayloadContent",
                                               [NSString stringWithFormat:@"SOGo %@ provisioning", prefix], @"PayloadDescription",
-                                              [NSString stringWithFormat: @"%@ (%@)", [activeUser login], type], @"PayloadDisplayName",
-                                              [NSString stringWithFormat:@"%@.%@.apple", [prefix lowercaseString], [serverURL host]], @"PayloadIdentifier",
+                                              [NSString stringWithFormat: @"%@ (%@)", name, type], @"PayloadDisplayName",
+                                              [NSString stringWithFormat:@"%@.%@.%@.apple", [prefix lowercaseString], [serverURL host], [name asMD5String]], @"PayloadIdentifier",
                                               @"SOGo", @"PayloadOrganization",
                                               [NSNumber numberWithBool: NO], @"PayloadRemovalDisallowed",
                                               @"Configuration", @"PayloadType",
@@ -88,12 +99,12 @@
                                      error: &error];
 }
 
-+ (NSString *)plistForCalendarsWithContext:(WOContext *)context andPath:(NSString *)path
++ (NSString *)plistForCalendarsWithContext:(WOContext *)context andPath:(NSString *)path andName:(NSString *)name
 {
   NSData *plistData;
   SOGoUser *activeUser;
 
-  plistData = [self _plistWithContext: context andPath: path andType: ProvisioningTypeCalendar];
+  plistData = [self _plistWithContext: context andPath: path andType: ProvisioningTypeCalendar andName: name];
   if (nil != plistData) {
     return [[[NSString alloc] initWithData:plistData encoding:NSUTF8StringEncoding] autorelease];
   } else {
@@ -102,12 +113,12 @@
   }
 }
 
-+ (NSString *)plistForContactsWithContext:(WOContext *)context andPath:(NSString *)path
++ (NSString *)plistForContactsWithContext:(WOContext *)context andPath:(NSString *)path andName:(NSString *)name
 {
   NSData *plistData;
   SOGoUser *activeUser;
 
-  plistData = [self _plistWithContext: context andPath: path andType: ProvisioningTypeContact];
+  plistData = [self _plistWithContext: context andPath: path andType: ProvisioningTypeContact andName: name];
   if (nil != plistData) {
     return [[[NSString alloc] initWithData:plistData encoding:NSUTF8StringEncoding] autorelease];
   } else {
