@@ -819,6 +819,22 @@ NSComparisonResult languageSort(id el1, id el2, void *context)
   return disableSharing;
 }
 
+- (BOOL)isURLEncryptionEnabled {
+  return [self boolForKey: @"SOGoURLEncryptionEnabled"];
+}
+
+- (NSString *) urlEncryptionPassphrase
+{
+  NSString *passphrase;
+
+  passphrase = [self stringForKey: @"SOGoURLEncryptionPassphrase"];
+
+  if (!passphrase)
+    passphrase = @"SOGoSuperSecret0"; // Default passphrase
+
+  return passphrase;
+}
+
 - (NSArray *) disableSharingAnyAuthUser
 {
   static NSArray *disableSharingAnyAuthUser = nil;
@@ -843,6 +859,23 @@ NSComparisonResult languageSort(id el1, id el2, void *context)
     }
   
   return disableExport;
+}
+
+- (BOOL) globalAddressBookFirstEntriesEnabled
+{
+  return [self boolForKey: @"SOGoGlobalAddressBookFirstEntries"];
+}
+
+- (int) globalAddressBookFirstEntriesCount
+{
+  int v;
+
+  v = [self integerForKey: @"SOGoGlobalAddressBookFirstEntriesCount"];
+
+  if (!v)
+    v = 100;
+
+  return v;
 }
 
 @end

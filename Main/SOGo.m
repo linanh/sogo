@@ -349,8 +349,10 @@ static BOOL debugLeaks;
     {
       if ([[context request] handledByDefaultHandler])
         authenticator = [SOGoWebAuthenticator sharedSOGoWebAuthenticator];
-      else
+      else {
         authenticator = [SOGoDAVAuthenticator sharedSOGoDAVAuthenticator];
+      }
+        
     }
 
   return authenticator;
@@ -363,10 +365,14 @@ static BOOL debugLeaks;
 {
   SOGoUser *user;
   id userFolder;
-
-  user = [SOGoUser userWithLogin: _key roles: nil];
+  NSData *decodedLogin;
+  NSString *login;
+  
+  login = [SOGoUser getDecryptedUsernameIfNeeded: _key];
+  
+  user = [SOGoUser userWithLogin: login roles: nil];
   if (user)
-    userFolder = [$(@"SOGoUserFolder") objectWithName: _key
+    userFolder = [$(@"SOGoUserFolder") objectWithName: login
                                           inContainer: self];
   else
     userFolder = nil;

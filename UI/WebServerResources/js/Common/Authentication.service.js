@@ -102,7 +102,7 @@
               else if (typeof data.totpDisabled != 'undefined') {
                 d.resolve({
                   cn: data.cn,
-                  url: redirectUrl(username, domain),
+                  url: redirectUrl(data.username, domain),
                   totpdisabled: 1
                 });
               }
@@ -124,12 +124,12 @@
                 else {
                   d.resolve({
                     cn: data.cn,
-                    url: redirectUrl(username, domain)
+                    url: redirectUrl(data.username, domain)
                   });
                 }
               }
               else {
-                d.resolve({ url: redirectUrl(username, domain) });
+                d.resolve({ url: redirectUrl(data.username, domain) });
               }
             }
           }, function(error) {
@@ -183,12 +183,12 @@
               'X-XSRF-TOKEN' : xsrfCookie
             },
             data: { userName: userName, newPassword: newPassword, oldPassword: oldPassword, token: token }
-          }).then(function() {
-            // Clean cookies for reauthenticate
-            $cookies.remove('XSRF-TOKEN', { path: '/SOGo/' });
-            $cookies.remove('0xHIGHFLYxSOGo', { path: '/SOGo/' });
-
-            d.resolve({url: redirectUrl(userName, domain)});
+          }).then(function (response) {
+            if (response && response.data && response.data.username) {
+              d.resolve({ url: redirectUrl(response.data.username, domain) });
+            } else {
+              d.resolve({ url: redirectUrl(userName, domain) });
+            }
           }, function(response) {
             var error,
                 data = response.data,

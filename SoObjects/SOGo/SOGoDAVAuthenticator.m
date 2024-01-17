@@ -41,8 +41,7 @@
 {
   static SOGoDAVAuthenticator *auth = nil;
  
-  if (!auth)
-    auth = [self new];
+  auth = [self new];
 
   return auth;
 }
@@ -68,6 +67,7 @@
               expire: &expire
                grace: &grace]
         && perr == PolicyNoError);
+        
   if (!rc)
     {
       sd = [SOGoSystemDefaults sharedSystemDefaults];

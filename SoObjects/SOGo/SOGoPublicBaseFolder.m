@@ -32,7 +32,6 @@
           acquire: (BOOL) acquire
 {
   id userFolder;
-
   if ([key length] > 0 && [SOGoUser userWithLogin: key roles: nil])
     userFolder = [SOGoUserFolder objectWithName: key inContainer: self];
   else

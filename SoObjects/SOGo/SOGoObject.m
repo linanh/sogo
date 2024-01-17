@@ -946,6 +946,7 @@
   NSMutableArray *path;
   NSString *baseURL, *urlMethod, *fullHost;
   NSNumber *port;
+  int i;
 
   serverURL = [context serverURL];
   baseURL = [[self baseURLInContext: context] stringByUnescapingURL];
@@ -972,6 +973,17 @@
 			 [serverURL host], port];
   else
     fullHost = [serverURL host];
+
+  for (i = 0 ; i < [path count] ; i++) {
+    // For DAV url, the username must be decrypted
+    // Username is placed afted dav in url components
+    if ([[[path objectAtIndex: i] lowercaseString] isEqualToString:@"dav"]) {
+      if ([path count] > (i + 1)) {
+        [path replaceObjectAtIndex: (i +1)
+                        withObject: [SOGoUser getDecryptedUsernameIfNeeded: [path objectAtIndex: (i + 1)]]];
+      }
+    }
+  }
 
   url = [[NSURL alloc] initWithScheme: [serverURL scheme]
 		       host: fullHost

@@ -133,6 +133,12 @@ NSComparisonResult languageSort(id el1, id el2, void *context);
 - (NSArray *) disableSharingAnyAuthUser;
 - (NSArray *) disableExport;
 
+- (BOOL) enableGlobalAddressBookFirstEntries;
+- (int) globalAddressBookFirstEntriesCount;
+
+- (BOOL)isURLEncryptionEnabled;
+- (NSString *)urlEncryptionPassphrase;
+
 @end
 
 #endif /* SOGOSYSTEMDEFAULTS_H */

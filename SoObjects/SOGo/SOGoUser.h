@@ -135,6 +135,10 @@
 - (SOGoAppointmentFolder *) personalCalendarFolderInContext: (WOContext *) context;
 - (SOGoContactFolder *) personalContactsFolderInContext: (WOContext *) context;
 
+/* Encryption */
++ (NSString *)getEncryptedUsernameIfNeeded:(NSString *)username;
++ (NSString *)getDecryptedUsernameIfNeeded:(NSString *)username;
+
 @end
 
 #endif /* __SOGoUser_H__ */
