@@ -133,7 +133,7 @@ class Editor extends ClassicEditor {
 				'redo'
 			]
 		},
-		language: 'en',
+		language: 'zh-cn',
 		image: {
 			toolbar: [
 				'imageTextAlternative',
