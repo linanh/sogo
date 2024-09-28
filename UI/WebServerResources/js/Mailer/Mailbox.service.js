@@ -31,11 +31,12 @@
    * @desc The factory we'll use to register with Angular
    * @returns the Mailbox constructor
    */
-  Mailbox.$factory = ['$q', '$timeout', '$log', 'sgSettings', 'Resource', 'Message', 'Acl', 'Preferences', 'sgMailbox_PRELOAD', 'sgMailbox_BATCH_DELETE_LIMIT', function($q, $timeout, $log, Settings, Resource, Message, Acl, Preferences, PRELOAD, BATCH_DELETE_LIMIT) {
+  Mailbox.$factory = ['$q', '$timeout', '$log', '$rootScope', 'sgSettings', 'Resource', 'Message', 'Acl', 'Preferences', 'sgMailbox_PRELOAD', 'sgMailbox_BATCH_DELETE_LIMIT', function ($q, $timeout, $log, $rootScope, Settings, Resource, Message, Acl, Preferences, PRELOAD, BATCH_DELETE_LIMIT) {
     angular.extend(Mailbox, {
       $q: $q,
       $timeout: $timeout,
       $log: $log,
+      $rootScope: $rootScope,
       $$resource: new Resource(Settings.activeUser('folderURL') + 'Mail', Settings.activeUser()),
       $Message: Message,
       $$Acl: Acl,
@@ -1032,11 +1033,17 @@
    */
   Mailbox.prototype.$reset = function(options) {
     var _this = this;
+    var account;
     angular.forEach(this.$shadowData, function(value, key) {
       delete _this[key];
     });
+    account = Object.assign({}, _this.$account)
     angular.extend(this, this.$shadowData);
     this.$shadowData = this.$omit();
+    this.account = account;
+    if (options && options.unseenCount) {
+      this.unseenCount = options.unseenCount;
+    }
     if (options && options.filter) {
       this.$messages = [];
       this.$visibleMessages = [];
@@ -1104,6 +1111,7 @@
    * @returns a promise of the HTTP operation
    */
   Mailbox.prototype.$unwrap = function(futureMailboxData) {
+    Mailbox.$rootScope.$broadcast('beforeListRefresh');
     var _this = this,
         deferred = Mailbox.$q.defer();
 
@@ -1226,6 +1234,7 @@
 
         Mailbox.$log.debug('mailbox ' + _this.id + ' ready');
         _this.$isLoading = false;
+        Mailbox.$rootScope.$broadcast('listRefreshed');
         deferred.resolve(_this.$messages);
       });
     }, function(data) {

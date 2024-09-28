@@ -492,7 +492,7 @@
           && ("UIxMailPartHTMLViewer" == parts[i].type
           || "UIxMailPartTextViewer" == parts[i].type)) {
           // Content
-          parts[i].content = this.highlightSearchTerms(parts[i].content);
+          parts[i].content = this.highlightSearchTerms(parts[i].content, false);
           // Title
           this.subject = this.getHighlightSubject();
           // From
@@ -513,18 +513,20 @@
    * @desc Returns the data with highlight search
    * @returns the data with highlighted search terms
    */
-  Message.prototype.highlightSearchTerms = function (data) {
+  Message.prototype.highlightSearchTerms = function (data, encodeEntities) {
     var i = 0;
     if (this.$mailbox.getHighlightWords() 
         && this.$mailbox.getHighlightWords().length > 0 
         && data 
         && -1 === data.indexOf("data-markjs")) {
       var dom = document.createElement("DIV");
-      dom.innerHTML = data;
+      dom.innerHTML = encodeEntities ? data.encodeEntities() : data;
       var markInstance = new Mark(dom);
       markInstance.mark(this.$mailbox.getHighlightWords());
       data = dom.innerHTML;
       dom.remove();
+    } else if (encodeEntities) {
+      data = data.encodeEntities();
     }
 
     return data;
@@ -537,7 +539,7 @@
    * @returns the subject with highlighted search terms
    */
   Message.prototype.getHighlightSubject = function () {   
-    return this.highlightSearchTerms(this.subject);
+    return this.highlightSearchTerms(this.subject, false);
   };
 
   /**
@@ -549,8 +551,8 @@
   Message.prototype.getHighlightFrom = function () {
     var i = 0;
     for (i = 0; i < this.from.length; i++) {
-      this.from[i].full = this.highlightSearchTerms(this.from[i].full);
-      this.from[i].name = this.highlightSearchTerms(this.from[i].name);
+      this.from[i].fullHighlighted = this.highlightSearchTerms(this.from[i].full, false);
+      this.from[i].nameHighlighted = this.highlightSearchTerms(this.from[i].name, false);
     }
 
     return this.from;
@@ -844,6 +846,10 @@
       if (match)
         data[param] = decodeURIComponent(match[1]);
     });
+    if ('html' == Message.$Preferences.defaults.SOGoMailComposeMessageType && data.text && data.text.length > 0) {
+      data.text = data.text.replace(/(\r\n|\n|\r)/g, '<br/>');
+    }
+      
     // Other Recipients
     _.forEach(['cc', 'bcc'], function (param) {
       var re = new RegExp(param + '=([^&]+)');

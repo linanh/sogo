@@ -7,7 +7,7 @@
   <md-dialog 
   flex="{{ editor.isFullscreen?    100 : 60 }}"
   flex-sm="{{ editor.isFullscreen? 100 : 80 }}">
-    <form name="eventForm" class="md-inline-form" ng-submit="editor.save(eventForm)">
+    <form name="eventForm" class="md-inline-form">
       <md-toolbar>
         <div class="md-toolbar-tools sg-no-transition">
           <md-icon class="material-icons sg-icon-toolbar-bg">event</md-icon>
@@ -207,22 +207,7 @@
         <!-- repeat -->
         <div class="sg-form-section">
           <div layout="row" layout-align="start center">
-            <md-input-container class="md-block md-flex">
-              <label><var:string label:value="Repeat"/></label>
-              <md-select
-                  ng-model="editor.component.repeat.frequency"
-                  ng-change="editor.changeFrequency($event)"
-                  ng-disabled="editor.component.occurrenceId">
-                <md-option ng-value="frequency[0]" ng-repeat="frequency in ::editor.frequencies()" ng-bind-html="frequency[1]"><!-- frequency --></md-option>
-              </md-select>
-            </md-input-container>
-            <md-button type="button" class="sg-icon-button"
-                       label:aria-label="repeat_CUSTOM"
-                       ng-disabled="editor.component.occurrenceId"
-                       ng-show="editor.component.repeat.frequency != 'never'"
-                       ng-click="editor.toggleRecurrenceEditor()">
-              <md-icon ng-class="{'md-rotate-45': editor.showRecurrenceEditor}">add</md-icon>
-            </md-button>
+            <var:component className="UIxRecurrenceListEditor" />
           </div>
           <div flex-offset="5"
                ng-show="editor.showRecurrenceEditor">
@@ -333,6 +318,7 @@
           <var:string label:value="Reset"/>
         </md-button>
         <md-button class="md-primary" type="submit"
+                   ng-click="editor.save(eventForm)"
                    ng-disabled="eventForm.$invalid || eventForm.$submitted">
           <var:string label:value="Save"/>
         </md-button>
@@ -374,9 +360,9 @@
                    ng-click="editor.edit(eventForm)">
           <var:string label:value="Edit"/>
         </md-button>
-        <md-button class="md-warn" type="button"
+        <md-button class="md-warn" type="submit"
                    ng-click="editor.save(eventForm, { ignoreConflicts: true })"
-                   ng-disabled="editor.eventForm.$invalid">
+                   ng-disabled="eventForm.$invalid || eventForm.$submitted">
           <var:string label:value="Save"/>
         </md-button>
       </md-dialog-actions>
@@ -409,10 +395,10 @@
                    ng-click="editor.edit(eventForm)">
           <var:string label:value="Edit"/>
         </md-button>
-        <md-button class="md-warn" type="button"
+        <md-button class="md-warn" type="submit"
                    ng-show="editor.attendeeConflictError.unavailableAttendees"
                    ng-click="editor.save(eventForm, { removeAttendees: editor.attendeeConflictError.unavailableAttendees })"
-                   ng-disabled="editor.eventForm.$invalid">
+                   ng-disabled="eventForm.$invalid || eventForm.$submitted">
           <var:string label:value="Save"/>
         </md-button>
       </md-dialog-actions>

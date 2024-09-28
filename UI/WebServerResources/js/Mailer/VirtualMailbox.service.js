@@ -17,11 +17,12 @@
    * @desc The factory we'll use to register with Angular
    * @returns the VirtualMailbox constructor
    */
-  VirtualMailbox.$factory = ['$q', '$timeout', '$log', 'sgSettings', 'Resource', 'Message', 'Mailbox', 'sgMailbox_PRELOAD', function($q, $timeout, $log, Settings, Resource, Mailbox, Message, PRELOAD) {
+  VirtualMailbox.$factory = ['$q', '$timeout', '$log', '$rootScope', 'sgSettings', 'Resource', 'Message', 'Mailbox', 'sgMailbox_PRELOAD', function ($q, $timeout, $log, $rootScope, Settings, Resource, Mailbox, Message, PRELOAD) {
     angular.extend(VirtualMailbox, {
       $q: $q,
       $timeout: $timeout,
       $log: $log,
+      $rootScope: $rootScope,
       $$resource: new Resource(Settings.activeUser('folderURL') + 'Mail', Settings.activeUser()),
       $Message: Message,
       selectedFolder: null,
@@ -233,9 +234,11 @@
    * @desc Return an associative array of the selected messages for each mailbox. Keys are the mailboxes ids.
    * @returns an associative array
    */
-  VirtualMailbox.prototype.selectedMessages = function() {
+  VirtualMailbox.prototype.selectedMessages = function(options) {
     var messagesMap = {};
     return _.filter(_.transform(this.$mailboxes, function(messagesMap, mailbox) {
+      if (options && options.updateCache)
+        mailbox.$selectedMessages = _.filter(mailbox.$messages, function (message) { return message.selected; });
       messagesMap[mailbox.id] = mailbox.$selectedMessages;
     }, {}), function(o) {
       return _.size(o) > 0;
@@ -293,7 +296,8 @@
   VirtualMailbox.prototype.$deleteMessages = function(messagesMap) {
     var _this = this, promises = [];
 
-    if (_.isArray(messagesMap) && messagesMap.length === 1) {
+    if (_.isArray(messagesMap) && messagesMap.length === 1 
+      && messagesMap[0] && messagesMap[0].mailbox && !_.isArray(messagesMap[0].mailbox)) {
       // Deleting one message
       var message = messagesMap[0];
       var mailbox = message.$mailbox;

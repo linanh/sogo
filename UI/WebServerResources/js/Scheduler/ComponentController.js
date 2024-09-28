@@ -328,12 +328,6 @@
         this.component.repeat.month.type == 'bymonthday';
     };
 
-    this.frequencies = function () {
-      return _.filter($window.repeatFrequencies, function (frequency) {
-        return frequency[0] != 'custom' || vm.component.repeat.frequency == 'custom';
-      });
-    };
-
     this.changeFrequency = function () {
       if (this.component.repeat.frequency == 'custom')
         this.showRecurrenceEditor = true;
@@ -557,10 +551,13 @@
               $mdDialog.cancel = vm.originalModalCancel;
               $mdDialog.hide();
             }, function(response) {
-              if (response.status == CalendarSettings.ConflictHTTPErrorCode)
+              vm.allowResubmit(form);
+
+              if (response.status == CalendarSettings.ConflictHTTPErrorCode) {
                 vm.attendeeConflictError = _.isObject(response.data.message) ? response.data.message : { reject: response.data.message };
-              else
+              } else {
                 vm.edit(form);
+              }
             });
         }
       });
@@ -590,6 +587,11 @@
 
     this.edit = function (form) {
       this.attendeeConflictError = false;
+      form.$setPristine();
+      form.$setDirty();
+    };
+
+    this.allowResubmit = function (form) {
       form.$setPristine();
       form.$setDirty();
     };

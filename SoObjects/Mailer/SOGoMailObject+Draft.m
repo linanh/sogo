@@ -115,7 +115,7 @@
   NSData *data;
 
   BOOL htmlComposition, htmlContent;
-  NSUInteger index;
+  NSUInteger index, indexTextPlain;
 
   content = @"";
 
@@ -129,8 +129,20 @@
       if (htmlComposition)
         {
           // Prefer HTML content
+          indexTextPlain = [types indexOfObject: @"text/plain"];
           index = [types indexOfObject: @"text/html"];
-          if (index == NSNotFound)
+          // Ticket https://bugs.sogo.nu/view.php?id=5983
+          // In this case, the first HTML content is used, but it can be the previous forwarded mail
+          // We check if there is a text/plain before text/html in the types array
+          // is this case, the text/plain is used prior to text/html.
+          if (index != NSNotFound // There is a text/html part
+              && indexTextPlain != NSNotFound  // There is a text/plain part
+              && indexTextPlain < index  // text/plain is before text/html
+              && (indexTextPlain + 1) < [keys count] // text/plain is not the last part of the mail
+              && [[[keys objectAtIndex: (indexTextPlain + 1)] objectForKey:@"mimeType"] rangeOfString:@"text/plain"].location != NSNotFound //  The text/plain is followed up by another text/plain
+              )
+            index = indexTextPlain;
+          else if (index == NSNotFound)
             index = [types indexOfObject: @"text/plain"];
           else
             htmlContent = YES;

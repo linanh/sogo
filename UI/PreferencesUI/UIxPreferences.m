@@ -1742,9 +1742,12 @@ static NSArray *reminderValues = nil;
 - (id <WOActionResults>) saveAction
 {
   id <WOActionResults> results;
+  NSString *requestStr;
   id o, v;
 
-  o = [[[context request] contentAsString] objectFromJSONString];
+  requestStr = [[context request] contentAsString];
+  requestStr = [requestStr stringWithoutHTMLInjection: NO];
+  o = [requestStr objectFromJSONString];
   results = nil;
 
   // Proceed with data sanitization of the "defaults"
@@ -1946,38 +1949,45 @@ static NSArray *reminderValues = nil;
 
       [[[user userDefaults] source] setValues: v];
 
-      if ([[user userDefaults] synchronize] && [self userHasMailAccess])
-        {
-          NSException *error;
-          SOGoMailAccount *account;
-          SOGoMailAccounts *folder;
-          SOGoDomainDefaults *dd;
+      if ([self userHasMailAccess]) {
+        if ([[user userDefaults] synchronize])
+          {
+            NSException *error;
+            SOGoMailAccount *account;
+            SOGoMailAccounts *folder;
+            SOGoDomainDefaults *dd;
 
-          dd = [[context activeUser] domainDefaults];
+            dd = [[context activeUser] domainDefaults];
 
-          // We check if the Sieve server is available *ONLY* if at least one of the option is enabled
-          if (!([dd sieveScriptsEnabled] || [dd vacationEnabled] || [dd forwardEnabled] || [dd notificationEnabled]) 
-                  || [self _isSieveServerAvailable])
-            {
-              BOOL forceActivation = ![[v objectForKey: @"hasActiveExternalSieveScripts"] boolValue];
+            // We check if the Sieve server is available *ONLY* if at least one of the option is enabled
+            if (!([dd sieveScriptsEnabled] || [dd vacationEnabled] || [dd forwardEnabled] || [dd notificationEnabled]) 
+                    || [self _isSieveServerAvailable])
+              {
+                BOOL forceActivation = ![[v objectForKey: @"hasActiveExternalSieveScripts"] boolValue];
 
-              folder = [[[context activeUser] homeFolderInContext: context]  mailAccountsFolder: @"Mail"
-                                                                                      inContext: context];
-              account = [folder lookupName: @"0" inContext: context acquire: NO];
+                folder = [[[context activeUser] homeFolderInContext: context]  mailAccountsFolder: @"Mail"
+                                                                                        inContext: context];
+                account = [folder lookupName: @"0" inContext: context acquire: NO];
 
-              if ((error = [account updateFiltersAndForceActivation: forceActivation]))
-                {
-                  results = (id <WOActionResults>) [self responseWithStatus: 500
-                                                      andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: [error reason], @"message", nil]];
-                }
-            }
-          else
-            results = (id <WOActionResults>) [self responseWithStatus: 503
-                         andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Service temporarily unavailable", @"message", nil]];
-        } else {
+                if ((error = [account updateFiltersAndForceActivation: forceActivation]))
+                  {
+                    results = (id <WOActionResults>) [self responseWithStatus: 500
+                                                        andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: [error reason], @"message", nil]];
+                  }
+              }
+            else
+              results = (id <WOActionResults>) [self responseWithStatus: 503
+                          andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Service temporarily unavailable", @"message", nil]];
+          } else {
+            results = (id <WOActionResults>) [self responseWithStatus: 500
+                          andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Error during the validation", @"message", nil]];
+          }
+      } else {
+        if (![[user userDefaults] synchronize]) {
           results = (id <WOActionResults>) [self responseWithStatus: 500
-                         andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Error during the validation", @"message", nil]];
+                          andJSONRepresentation: [NSDictionary dictionaryWithObjectsAndKeys: @"Error during the validation", @"message", nil]];
         }
+      }
     }
 
   if ((v = [o objectForKey: @"settings"]))

@@ -53,8 +53,8 @@
   /**
    * @ngInject
    */
-  sgMailboxListItemController.$inject = ['$scope', '$rootScope', '$element', '$state', '$timeout', '$mdToast', '$mdPanel', '$mdMedia', '$mdSidenav', 'sgConstant', 'Dialog', 'Mailbox', 'encodeUriFilter'];
-  function sgMailboxListItemController($scope, $rootScope, $element, $state, $timeout, $mdToast, $mdPanel, $mdMedia, $mdSidenav, sgConstant, Dialog, Mailbox, encodeUriFilter) {
+  sgMailboxListItemController.$inject = ['$scope', '$rootScope', '$element', '$state', '$timeout', '$mdToast', '$mdPanel', '$mdMedia', '$mdSidenav', 'sgConstant', 'Dialog', 'Mailbox', 'encodeUriFilter', '$window', 'Account'];
+  function sgMailboxListItemController($scope, $rootScope, $element, $state, $timeout, $mdToast, $mdPanel, $mdMedia, $mdSidenav, sgConstant, Dialog, Mailbox, encodeUriFilter, $window, Account) {
     var $ctrl = this;
 
 
@@ -84,15 +84,24 @@
 
 
     this.selectFolder = function($event) {
-      $rootScope.$broadcast('resetMailAdvancedSearchPanel'); // Reset advanced search panel (broadcast event to MailboxesController)
       if (this.editMode || this.mailbox == Mailbox.selectedFolder || this.mailbox.isNoSelect())
         return;
       
-      this.mailbox.setHighlightWords([]);
+      this.mailbox.setHighlightWords([]);  
+
       if (Mailbox.selectedFolder) {
-        Mailbox.$virtualMode = false;
-        Mailbox.selectedFolder.$reset({ filter: true });
+        if (Mailbox.$virtualMode) {
+          Mailbox.$virtualMode = false;
+          Mailbox.$virtualPath = false;
+          $rootScope.$broadcast('resetMailAdvancedSearchPanel'); // Reset advanced search panel (broadcast event to MailboxesController)
+          if (Mailbox.selectedFolder.$mailboxes && Mailbox.selectedFolder.$mailboxes.length > 0) {
+            Mailbox.selectedFolder.$reset({ filter: true, unseenCount: Mailbox.selectedFolder.$mailboxes[0].unseenCount });
+          }
+        } else {
+          Mailbox.selectedFolder.$reset({ filter: true, unseenCount: Mailbox.selectedFolder.unseenCount });
+        }
       }
+
       this.accountController.selectFolder(this);
       if ($event) {
         $state.go('mail.account.mailbox', {
